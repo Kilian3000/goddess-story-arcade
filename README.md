@@ -2,25 +2,33 @@
 
 [![CI](https://github.com/Kilian3000/goddess-story-arcade/actions/workflows/ci.yml/badge.svg)](https://github.com/Kilian3000/goddess-story-arcade/actions/workflows/ci.yml)
 
-A neutral, browser-based Goddess Story booster arcade. It recreates pack collation instead of drawing every card from one flat rarity pool, then wraps the opening in responsive animation, synthesized audio, and two booster-winning side games.
+A fan-made browser arcade for Goddess Story boosters.
 
-This repository is deliberately independent from any production brand, domain, tracker, or server. It works from a bundled local card-library snapshot, while deployments can replace that source through a small configuration boundary.
+This started with a simple problem: opening digital packs felt flat. Here you actually rip the wrapper, peel through the cards, hear the hits, and have two slightly questionable ways to gamble for more packs.
 
-> **18+ fan project.** The interface and artwork may contain mature or suggestive material.
+Everything needed to run it is in this repository, including the card catalog and artwork. No account, API key, tracker, or separate image server is required.
 
-## What is included
+> **18+ project:** some cards and character artwork are suggestive or NSFW.
 
-- **Open Packs** — 47 booster configurations across 1, 2, 5, 10, and 20 yuan products.
-- **Physical-style collation** — ordered rarity lanes, per-box state where useful, and no duplicate card ID inside one pack.
-- **Tactile reveals** — tearing, swiping, rarity reactions, keyboard/touch controls, and a low-latency Web Audio soundtrack.
-- **Waifu 21** — blackjack against a rotating dealer, with better booster prizes for stronger hands.
-- **Heartlock** — tiered timing duels against 12 adult opponents, with progression and recovery matches.
-- **Local progress** — opened-pack counts and game state stay in the browser; there is no account or server database.
-- **Self-contained card library** — 7,013 catalog records and their card/set artwork are bundled under `public/card-data`, so a clone works without a tracker or external image host.
+![Goddess Story pack-opening screen](docs/showcase/pack-opening.jpg)
 
-## Run locally
+## What is in here?
 
-Requirements: Node.js **22.13 or newer** and npm.
+- **Open Packs:** 47 booster configurations across the 1, 2, 5, 10, and 20 yuan lines.
+- **Pack collation that makes sense:** cards are drawn from ordered rarity slots instead of one flat random pool. Exact duplicate cards are blocked inside a single pack.
+- **Proper pack-opening feedback:** ripping, card swipes, rarity effects, keyboard/touch controls, sound effects, and procedural music.
+- **Waifu 21:** blackjack against a rotating dealer. Better hands win better packs.
+- **Heartlock:** a timing game with different opponents and difficulty levels.
+- **Local saves:** opened-pack counts and game progress stay in the browser.
+
+<p align="center">
+  <img src="docs/showcase/heartlock.jpg" width="49%" alt="Heartlock timing game">
+  <img src="docs/showcase/waifu-21.jpg" width="49%" alt="Waifu 21 blackjack game">
+</p>
+
+## Run it locally
+
+You need Node.js 22.13 or newer.
 
 ```bash
 git clone https://github.com/Kilian3000/goddess-story-arcade.git
@@ -29,71 +37,52 @@ npm ci
 npm run dev
 ```
 
-Open `http://localhost:3000`. No `.env` file, external card server, API key, or password is required. Copy `.env.example` only when you intentionally want to override the neutral branding or card-data paths for a deployment.
+Then open [http://localhost:3000](http://localhost:3000).
 
 Useful commands:
 
 ```bash
-npm run dev      # local development server
-npm test         # engine tests, audio contracts, production build, rendered HTML tests
-npm run lint     # ESLint
-npm run build    # production build only
+npm run dev      # development server
+npm run build    # production build
+npm run lint     # lint source and tests
+npm test         # game logic, assets, audio contracts, build, and rendering
 ```
-
-## Configuration
-
-All integration values are build-time `NEXT_PUBLIC_*` settings:
-
-| Variable | Neutral default | Purpose |
-| --- | --- | --- |
-| `NEXT_PUBLIC_ARCADE_TITLE` | `Goddess Story Arcade` | Browser and social title |
-| `NEXT_PUBLIC_ARCADE_BRAND_LEAD` | `GODDESS` | First wordmark segment |
-| `NEXT_PUBLIC_ARCADE_BRAND_ACCENT` | `.STORY` | Accent wordmark segment |
-| `NEXT_PUBLIC_ARCADE_TAGLINE` | `CARD ARCADE` | Small wordmark line |
-| `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | Metadata base URL |
-| `NEXT_PUBLIC_CARD_DATABASE_URL` | `/card-data/db.js` | Read-only card database script |
-| `NEXT_PUBLIC_CARD_IMAGE_ROOT` | `/card-data/` | Root for relative card and set images |
-
-See [INTEGRATION.md](INTEGRATION.md) for the database contract, reverse-proxy option, Docker/Portainer setup, and the short reintegration checklist.
 
 ## Docker
 
-The Compose file forwards `.env` values as image build arguments:
-
 ```bash
-cp .env.example .env
-# edit .env, then:
 docker compose up --build
 ```
 
-Or build directly with the Dockerfile and the required `--build-arg` values. The server listens on `http://localhost:3000`.
+The app will be available on port `3000`. The included Compose file is intentionally generic, so it can be dropped into Portainer or another deployment without carrying private server details with it.
 
-## Project map
+## Card data
 
-| Path | Purpose |
-| --- | --- |
-| `app/arcade-config.ts` | Neutral brand and card-data adapter |
-| `app/page.tsx` | Main arcade state, catalog loading, and pack-opening flow |
-| `app/gacha-engine.ts` | Deterministic pack recipes, rarity lanes, and collation |
-| `app/use-gacha-audio.ts` | Safari-safe procedural music and immediate sound effects |
-| `app/lucky-shrine.tsx` | Waifu 21 |
-| `app/temptation-duel.tsx` | Heartlock |
-| `app/heartlock-roster.ts` | Adult-only opponent pools by difficulty |
-| `app/globals.css` | Responsive visual system |
-| `public/pack-configs.json` | Booster metadata and published pull-rate source data |
-| `public/card-data/` | Bundled read-only database, card scans, and set artwork |
-| `tests/` | Pull logic, roster, audio, build, and rendered-output checks |
+The repository includes a read-only snapshot with 7,013 card records and the matching card/set images under `public/card-data`.
 
-## Data boundary
+The default paths are:
 
-The repository includes a dated, read-only card-library snapshot so development is self-contained. It does **not** include a tracker implementation, accounts, server credentials, private infrastructure details, or production deployment configuration. Optional build settings can point a deployment at another compatible snapshot without coupling feature work to that deployment.
+- `/card-data/db.js`
+- `/card-data/images/...`
 
-## Collaboration
+If a deployment needs a different catalog or image source later, copy `.env.example` and set the `NEXT_PUBLIC_CARD_*` values. The game code does not need to be changed. The expected database shape and reintegration steps are in [INTEGRATION.md](INTEGRATION.md).
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Keep all characters in mature artwork unmistakably adult, never commit credentials or private infrastructure details, and run `npm test` before pushing.
+## Where things live
 
-## Rights and disclaimer
+- `app/page.tsx` — main arcade and pack-opening flow
+- `app/gacha-engine.ts` — pack recipes and rarity collation
+- `app/use-gacha-audio.ts` — music and sound effects
+- `app/lucky-shrine.tsx` — Waifu 21
+- `app/temptation-duel.tsx` — Heartlock
+- `app/arcade-config.ts` — branding and card-data adapter
+- `public/pack-configs.json` — booster configurations
+- `public/card-data` — bundled catalog and artwork
+- `tests` — pull logic, roster, audio, asset, and rendering checks
 
-This is an unofficial, non-commercial fan project and is not affiliated with Goddess Story, WaifuCards, or any represented franchise. Character names, likenesses, trademarks, and card artwork belong to their respective owners.
+## Contributing
 
-This private repository is shared for personal collaboration and is **not offered under an open-source license**. Do not redistribute or monetize third-party artwork without the necessary permission. See [NOTICE.md](NOTICE.md) for the asset boundary.
+Pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md), keep suggestive character art unmistakably adult, and run `npm test` before pushing.
+
+## Disclaimer
+
+This is an unofficial, non-commercial fan project. It is not affiliated with Goddess Story, WaifuCards, or any represented franchise. Character names, likenesses, trademarks, and card artwork belong to their respective owners. See [NOTICE.md](NOTICE.md) for the asset and data notes.

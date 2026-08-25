@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 
@@ -12,6 +12,20 @@ async function readDatabase() {
     .replace(/^window\.CARD_LISTER_DB\s*=\s*/, "")
     .replace(/;\s*$/, "");
   return JSON.parse(json);
+}
+
+async function listFiles(directory, prefix = "") {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    const relative = path.posix.join(prefix, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...await listFiles(path.join(directory, entry.name), relative));
+    } else {
+      files.push(relative);
+    }
+  }
+  return files;
 }
 
 test("bundled catalog is complete and uses local relative artwork", async () => {
@@ -31,9 +45,10 @@ test("bundled catalog is complete and uses local relative artwork", async () => 
     }
   }
 
-  await Promise.all(
-    [...imagePaths].map((image) => access(path.join(root, "public/card-data", image))),
-  );
+  const bundledFiles = new Set(await listFiles(path.join(root, "public/card-data")));
+  for (const image of imagePaths) {
+    assert.ok(bundledFiles.has(image), `${image} is missing or has different filename casing`);
+  }
 });
 
 test("every configured booster has bundled cards and set art", async () => {

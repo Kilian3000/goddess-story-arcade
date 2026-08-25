@@ -1,0 +1,12 @@
+node_modules
+dist
+.next
+.wrangler
+.vinext
+.git
+.DS_Store
+._*
+work
+outputs
+tsconfig.tsbuildinfo
+npm-debug.log*

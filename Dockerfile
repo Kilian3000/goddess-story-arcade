@@ -1,0 +1,40 @@
+FROM node:22-alpine AS build
+
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+
+ARG NEXT_PUBLIC_ARCADE_TITLE="Goddess Story Arcade"
+ARG NEXT_PUBLIC_ARCADE_BRAND_LEAD="GODDESS"
+ARG NEXT_PUBLIC_ARCADE_BRAND_ACCENT=".STORY"
+ARG NEXT_PUBLIC_ARCADE_TAGLINE="CARD ARCADE"
+ARG NEXT_PUBLIC_SITE_URL="http://localhost:3000"
+ARG NEXT_PUBLIC_CARD_DATABASE_URL="/card-data/db.js"
+ARG NEXT_PUBLIC_CARD_IMAGE_ROOT="/card-data/"
+
+ENV NEXT_PUBLIC_ARCADE_TITLE=$NEXT_PUBLIC_ARCADE_TITLE
+ENV NEXT_PUBLIC_ARCADE_BRAND_LEAD=$NEXT_PUBLIC_ARCADE_BRAND_LEAD
+ENV NEXT_PUBLIC_ARCADE_BRAND_ACCENT=$NEXT_PUBLIC_ARCADE_BRAND_ACCENT
+ENV NEXT_PUBLIC_ARCADE_TAGLINE=$NEXT_PUBLIC_ARCADE_TAGLINE
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+ENV NEXT_PUBLIC_CARD_DATABASE_URL=$NEXT_PUBLIC_CARD_DATABASE_URL
+ENV NEXT_PUBLIC_CARD_IMAGE_ROOT=$NEXT_PUBLIC_CARD_IMAGE_ROOT
+
+RUN npm run build
+
+FROM node:22-alpine AS runtime
+
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3000
+
+COPY --from=build /app/package.json /app/package-lock.json ./
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+
+EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:3000/ >/dev/null || exit 1
+
+CMD ["npm", "run", "start", "--", "--hostname", "0.0.0.0", "--port", "3000"]

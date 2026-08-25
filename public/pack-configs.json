@@ -1,0 +1,2770 @@
+{
+  "source": "https://waifucards.app/api/packs",
+  "generatedAt": "2026-08-23T21:32:00.656Z",
+  "packs": [
+    {
+      "id": 29,
+      "setId": 1,
+      "setName": "NS-01",
+      "title": "NS-01",
+      "group": "1 юань",
+      "cost": 1,
+      "boostersCount": 30,
+      "description": "5 карт в паке, 30 паков в боксе",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 5,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SR",
+            "sure": 24,
+            "expected": 0
+          },
+          {
+            "rarity": "SSR",
+            "sure": 6,
+            "expected": 0
+          }
+        ],
+        "bonus": [],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 28,
+      "setId": 2,
+      "setName": "NS-02",
+      "title": "NS-02",
+      "group": "1 юань",
+      "cost": 1,
+      "boostersCount": 30,
+      "description": "5 карт в паке, 30 паков в боксе",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 5,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SR",
+            "sure": 24,
+            "expected": 0
+          },
+          {
+            "rarity": "SSR",
+            "sure": 6,
+            "expected": 0
+          }
+        ],
+        "bonus": [],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 27,
+      "setId": 3,
+      "setName": "NS-03",
+      "title": "NS-03",
+      "group": "1 юань",
+      "cost": 1,
+      "boostersCount": 30,
+      "description": "5 карт в паке, 30 паков в боксе",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 5,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SR",
+            "sure": 24,
+            "expected": 0
+          },
+          {
+            "rarity": "SSR",
+            "sure": 6,
+            "expected": 0
+          }
+        ],
+        "bonus": [],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 26,
+      "setId": 4,
+      "setName": "NS-04",
+      "title": "NS-04",
+      "group": "1 юань",
+      "cost": 1,
+      "boostersCount": 30,
+      "description": "5 карт в паке, 30 паков в боксе",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 5,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SR",
+            "sure": 24,
+            "expected": 0
+          },
+          {
+            "rarity": "SSR",
+            "sure": 6,
+            "expected": 0
+          }
+        ],
+        "bonus": [],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 25,
+      "setId": 5,
+      "setName": "NS-05",
+      "title": "NS-05",
+      "group": "1 юань",
+      "cost": 1,
+      "boostersCount": 30,
+      "description": "5 карт в паке, 30 паков в боксе",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 5,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SR",
+            "sure": 24,
+            "expected": 0
+          },
+          {
+            "rarity": "SSR",
+            "sure": 6,
+            "expected": 0
+          }
+        ],
+        "bonus": [],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 24,
+      "setId": 6,
+      "setName": "NS-06",
+      "title": "NS-06",
+      "group": "1 юань",
+      "cost": 1,
+      "boostersCount": 30,
+      "description": "5 карт в паке, 30 паков в боксе",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 5,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SR",
+            "sure": 24,
+            "expected": 0
+          },
+          {
+            "rarity": "SSR",
+            "sure": 6,
+            "expected": 0
+          }
+        ],
+        "bonus": [],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 23,
+      "setId": 7,
+      "setName": "NS-07",
+      "title": "NS-07",
+      "group": "1 юань",
+      "cost": 1,
+      "boostersCount": 30,
+      "description": "5 карт в паке, 30 паков в боксе",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 5,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SR",
+            "sure": 24,
+            "expected": 0
+          },
+          {
+            "rarity": "SSR",
+            "sure": 6,
+            "expected": 0
+          }
+        ],
+        "bonus": [],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 7,
+      "setId": 25,
+      "setName": "NS-08",
+      "title": "NS-08",
+      "group": "1 юань",
+      "cost": 1,
+      "boostersCount": 30,
+      "description": "5 карт в паке, 30 паков в боксе",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 5,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SR",
+            "sure": 24,
+            "expected": 0
+          },
+          {
+            "rarity": "SSR",
+            "sure": 6,
+            "expected": 0
+          }
+        ],
+        "bonus": [],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 6,
+      "setId": 29,
+      "setName": "NS-09",
+      "title": "NS-09",
+      "group": "1 юань",
+      "cost": 1,
+      "boostersCount": 30,
+      "description": "5 карт в паке, 30 паков в боксе",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 5,
+        "perPack": [],
+        "perBox": [
+          {
+            "rarity": "R",
+            "sure": 0,
+            "expected": 100
+          },
+          {
+            "rarity": "CR",
+            "sure": 0,
+            "expected": 20
+          },
+          {
+            "rarity": "SR",
+            "sure": 0,
+            "expected": 18
+          },
+          {
+            "rarity": "SSR",
+            "sure": 0,
+            "expected": 7
+          },
+          {
+            "rarity": "SCR",
+            "sure": 0,
+            "expected": 4
+          },
+          {
+            "rarity": "SER",
+            "sure": 0,
+            "expected": 1
+          }
+        ],
+        "bonus": [],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 3,
+      "setId": 33,
+      "setName": "NS-10",
+      "title": "NS-10",
+      "group": "1 юань",
+      "cost": 1,
+      "boostersCount": 30,
+      "description": "5 карт в паке, 30 паков в боксе",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 5,
+        "perPack": [],
+        "perBox": [
+          {
+            "rarity": "R",
+            "sure": 0,
+            "expected": 100
+          },
+          {
+            "rarity": "CR",
+            "sure": 0,
+            "expected": 20
+          },
+          {
+            "rarity": "SR",
+            "sure": 0,
+            "expected": 18
+          },
+          {
+            "rarity": "SSR",
+            "sure": 0,
+            "expected": 7
+          },
+          {
+            "rarity": "SCR",
+            "sure": 0,
+            "expected": 4
+          },
+          {
+            "rarity": "SER",
+            "sure": 0,
+            "expected": 1
+          }
+        ],
+        "bonus": [],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 4,
+      "setId": 37,
+      "setName": "NS-11",
+      "title": "NS-11",
+      "group": "1 юань",
+      "cost": 1,
+      "boostersCount": 30,
+      "description": "5 карт в паке, 30 паков в боксе",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 5,
+        "perPack": [],
+        "perBox": [
+          {
+            "rarity": "R",
+            "sure": 0,
+            "expected": 100
+          },
+          {
+            "rarity": "CR",
+            "sure": 0,
+            "expected": 20
+          },
+          {
+            "rarity": "SR",
+            "sure": 0,
+            "expected": 18
+          },
+          {
+            "rarity": "SSR",
+            "sure": 0,
+            "expected": 7
+          },
+          {
+            "rarity": "SCR",
+            "sure": 0,
+            "expected": 4
+          },
+          {
+            "rarity": "SER",
+            "sure": 0,
+            "expected": 1
+          }
+        ],
+        "bonus": [],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 2,
+      "setId": 74,
+      "setName": "NS-12",
+      "title": "NS-12",
+      "group": "1 юань",
+      "cost": 1,
+      "boostersCount": 30,
+      "description": "5 карт в паке, 30 паков в боксе",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 5,
+        "perPack": [],
+        "perBox": [
+          {
+            "rarity": "R",
+            "sure": 0,
+            "expected": 100
+          },
+          {
+            "rarity": "CR",
+            "sure": 0,
+            "expected": 20
+          },
+          {
+            "rarity": "SR",
+            "sure": 0,
+            "expected": 18
+          },
+          {
+            "rarity": "SSR",
+            "sure": 0,
+            "expected": 7
+          },
+          {
+            "rarity": "SCR",
+            "sure": 0,
+            "expected": 4
+          },
+          {
+            "rarity": "SER",
+            "sure": 0,
+            "expected": 1
+          }
+        ],
+        "bonus": [],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 48,
+      "setId": 106,
+      "setName": "NS-13",
+      "title": "NS-13",
+      "group": "1 юань",
+      "cost": 1,
+      "boostersCount": 30,
+      "description": "5 карт в паке, 30 паков в боксе",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 5,
+        "perPack": [],
+        "perBox": [
+          {
+            "rarity": "R",
+            "sure": 0,
+            "expected": 100
+          },
+          {
+            "rarity": "CR",
+            "sure": 0,
+            "expected": 20
+          },
+          {
+            "rarity": "SR",
+            "sure": 0,
+            "expected": 18
+          },
+          {
+            "rarity": "SSR",
+            "sure": 0,
+            "expected": 5
+          },
+          {
+            "rarity": "SCR",
+            "sure": 0,
+            "expected": 4
+          },
+          {
+            "rarity": "GR",
+            "sure": 2,
+            "expected": 0
+          },
+          {
+            "rarity": "SER",
+            "sure": 0,
+            "expected": 1
+          }
+        ],
+        "bonus": [],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 49,
+      "setId": 112,
+      "setName": "NS-14",
+      "title": "NS-14",
+      "group": "1 юань",
+      "cost": 1,
+      "boostersCount": 30,
+      "description": "5 карт в паке, 30 паков в боксе",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 5,
+        "perPack": [],
+        "perBox": [
+          {
+            "rarity": "R",
+            "sure": 0,
+            "expected": 100
+          },
+          {
+            "rarity": "CR",
+            "sure": 0,
+            "expected": 20
+          },
+          {
+            "rarity": "SR",
+            "sure": 0,
+            "expected": 18
+          },
+          {
+            "rarity": "SSR",
+            "sure": 0,
+            "expected": 5
+          },
+          {
+            "rarity": "SCR",
+            "sure": 0,
+            "expected": 4
+          },
+          {
+            "rarity": "GR",
+            "sure": 2,
+            "expected": 0
+          },
+          {
+            "rarity": "SER",
+            "sure": 0,
+            "expected": 1
+          }
+        ],
+        "bonus": [],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 51,
+      "setId": 128,
+      "setName": "NS-16",
+      "title": "NS-16",
+      "group": "1 юань",
+      "cost": 1,
+      "boostersCount": 30,
+      "description": "5 карт в паке, 30 паков в боксе",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 5,
+        "perPack": [],
+        "perBox": [
+          {
+            "rarity": "R",
+            "sure": 0,
+            "expected": 100
+          },
+          {
+            "rarity": "CR",
+            "sure": 0,
+            "expected": 20
+          },
+          {
+            "rarity": "SR",
+            "sure": 0,
+            "expected": 18
+          },
+          {
+            "rarity": "SSR",
+            "sure": 0,
+            "expected": 5
+          },
+          {
+            "rarity": "SCR",
+            "sure": 0,
+            "expected": 4
+          },
+          {
+            "rarity": "GR",
+            "sure": 2,
+            "expected": 0
+          },
+          {
+            "rarity": "SER",
+            "sure": 0,
+            "expected": 1
+          }
+        ],
+        "bonus": [],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 22,
+      "setId": 8,
+      "setName": "NS-02-M01",
+      "title": "NS-02-M01",
+      "group": "2 юаня",
+      "cost": 2,
+      "boostersCount": 30,
+      "description": "6 карт в паке, 30 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 6,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          },
+          {
+            "rarity": "SR",
+            "count": 1
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SR",
+            "sure": 24,
+            "expected": 0
+          },
+          {
+            "rarity": "SSR",
+            "sure": 5,
+            "expected": 0.4
+          },
+          {
+            "rarity": "PTR",
+            "sure": 0,
+            "expected": 0.6
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 30
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 21,
+      "setId": 9,
+      "setName": "NS-02-M02",
+      "title": "NS-02-M02",
+      "group": "2 юаня",
+      "cost": 2,
+      "boostersCount": 30,
+      "description": "6 карт в паке, 30 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 6,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          },
+          {
+            "rarity": "SR",
+            "count": 1
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SR",
+            "sure": 24,
+            "expected": 0
+          },
+          {
+            "rarity": "SSR",
+            "sure": 5,
+            "expected": 0.4
+          },
+          {
+            "rarity": "PTR",
+            "sure": 0,
+            "expected": 0.6
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 30
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 20,
+      "setId": 10,
+      "setName": "NS-02-M03",
+      "title": "NS-02-M03",
+      "group": "2 юаня",
+      "cost": 2,
+      "boostersCount": 30,
+      "description": "6 карт в паке, 30 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 6,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          },
+          {
+            "rarity": "SR",
+            "count": 1
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SR",
+            "sure": 24,
+            "expected": 0
+          },
+          {
+            "rarity": "SSR",
+            "sure": 5,
+            "expected": 0.5
+          },
+          {
+            "rarity": "PTR",
+            "sure": 0,
+            "expected": 0.5
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 30
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 19,
+      "setId": 11,
+      "setName": "NS-02-M04",
+      "title": "NS-02-M04",
+      "group": "2 юаня",
+      "cost": 2,
+      "boostersCount": 30,
+      "description": "6 карт в паке, 30 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 6,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          },
+          {
+            "rarity": "SR",
+            "count": 1
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SR",
+            "sure": 24,
+            "expected": 0
+          },
+          {
+            "rarity": "SSR",
+            "sure": 5,
+            "expected": 0.5
+          },
+          {
+            "rarity": "PTR",
+            "sure": 0,
+            "expected": 0.5
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 30
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 18,
+      "setId": 12,
+      "setName": "NS-02-M05",
+      "title": "NS-02-M05",
+      "group": "2 юаня",
+      "cost": 2,
+      "boostersCount": 30,
+      "description": "6 карт в паке, 30 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 6,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          },
+          {
+            "rarity": "SR",
+            "count": 1
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SR",
+            "sure": 24,
+            "expected": 0
+          },
+          {
+            "rarity": "SSR",
+            "sure": 5,
+            "expected": 0.5
+          },
+          {
+            "rarity": "PTR",
+            "sure": 0,
+            "expected": 0.5
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 30
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 17,
+      "setId": 13,
+      "setName": "NS-02-M06",
+      "title": "NS-02-M06",
+      "group": "2 юаня",
+      "cost": 2,
+      "boostersCount": 30,
+      "description": "6 карт в паке, 30 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 6,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          },
+          {
+            "rarity": "SR",
+            "count": 1
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SR",
+            "sure": 24,
+            "expected": 0
+          },
+          {
+            "rarity": "SSR",
+            "sure": 5,
+            "expected": 0.5
+          },
+          {
+            "rarity": "PTR",
+            "sure": 0,
+            "expected": 0.5
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 30
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 16,
+      "setId": 14,
+      "setName": "NS-02-M07",
+      "title": "NS-02-M07",
+      "group": "2 юаня",
+      "cost": 2,
+      "boostersCount": 30,
+      "description": "6 карт в паке, 30 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 6,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          },
+          {
+            "rarity": "SR",
+            "count": 1
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SR",
+            "sure": 24,
+            "expected": 0
+          },
+          {
+            "rarity": "SSR",
+            "sure": 5,
+            "expected": 0.5
+          },
+          {
+            "rarity": "PTR",
+            "sure": 0,
+            "expected": 0.5
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 30
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 15,
+      "setId": 26,
+      "setName": "NS-02-M08",
+      "title": "NS-02-M08",
+      "group": "2 юаня",
+      "cost": 2,
+      "boostersCount": 30,
+      "description": "6 карт в паке, 30 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 6,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          },
+          {
+            "rarity": "SR",
+            "count": 1
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SR",
+            "sure": 24,
+            "expected": 0
+          },
+          {
+            "rarity": "SSR",
+            "sure": 5,
+            "expected": 0.5
+          },
+          {
+            "rarity": "PTR",
+            "sure": 0,
+            "expected": 0.5
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 30
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 14,
+      "setId": 31,
+      "setName": "NS-02-M09",
+      "title": "NS-02-M09",
+      "group": "2 юаня",
+      "cost": 2,
+      "boostersCount": 30,
+      "description": "6 карт в паке, 30 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 6,
+        "perPack": [],
+        "perBox": [
+          {
+            "rarity": "R",
+            "sure": 0,
+            "expected": 100
+          },
+          {
+            "rarity": "SR",
+            "sure": 0,
+            "expected": 41.19230769230769
+          },
+          {
+            "rarity": "CR",
+            "sure": 0,
+            "expected": 20
+          },
+          {
+            "rarity": "SCR",
+            "sure": 0,
+            "expected": 9.807692307692307
+          },
+          {
+            "rarity": "SSR",
+            "sure": 0,
+            "expected": 7
+          },
+          {
+            "rarity": "SER",
+            "sure": 0,
+            "expected": 1
+          },
+          {
+            "rarity": "UR",
+            "sure": 0,
+            "expected": 0.5
+          },
+          {
+            "rarity": "PTR",
+            "sure": 0,
+            "expected": 0.5
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 30
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 5,
+      "setId": 35,
+      "setName": "NS-02-M10",
+      "title": "NS-02-M10",
+      "group": "2 юаня",
+      "cost": 2,
+      "boostersCount": 30,
+      "description": "6 карт в паке, 30 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 6,
+        "perPack": [],
+        "perBox": [
+          {
+            "rarity": "R",
+            "sure": 0,
+            "expected": 100
+          },
+          {
+            "rarity": "SR",
+            "sure": 0,
+            "expected": 41.19230769230769
+          },
+          {
+            "rarity": "CR",
+            "sure": 0,
+            "expected": 20
+          },
+          {
+            "rarity": "SCR",
+            "sure": 0,
+            "expected": 9.807692307692307
+          },
+          {
+            "rarity": "SSR",
+            "sure": 0,
+            "expected": 7
+          },
+          {
+            "rarity": "SER",
+            "sure": 0,
+            "expected": 1
+          },
+          {
+            "rarity": "UR",
+            "sure": 0,
+            "expected": 0.5
+          },
+          {
+            "rarity": "PTR",
+            "sure": 0,
+            "expected": 0.5
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 30
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 1,
+      "setId": 39,
+      "setName": "NS-02-M11",
+      "title": "NS-02-M11",
+      "group": "2 юаня",
+      "cost": 2,
+      "boostersCount": 30,
+      "description": "6 карт в паке, 30 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 6,
+        "perPack": [],
+        "perBox": [
+          {
+            "rarity": "R",
+            "sure": 0,
+            "expected": 100
+          },
+          {
+            "rarity": "SR",
+            "sure": 0,
+            "expected": 42
+          },
+          {
+            "rarity": "CR",
+            "sure": 0,
+            "expected": 20
+          },
+          {
+            "rarity": "SCR",
+            "sure": 0,
+            "expected": 10
+          },
+          {
+            "rarity": "SSR",
+            "sure": 0,
+            "expected": 5.764705882352941
+          },
+          {
+            "rarity": "SER",
+            "sure": 0,
+            "expected": 0.8235294117647058
+          },
+          {
+            "rarity": "UR",
+            "sure": 0,
+            "expected": 0.5
+          },
+          {
+            "rarity": "PTR",
+            "sure": 0,
+            "expected": 0.5
+          },
+          {
+            "rarity": "MSR",
+            "sure": 0,
+            "expected": 0.4117647058823529
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 30
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 10,
+      "setId": 81,
+      "setName": "NS-02-M12",
+      "title": "NS-02-M12",
+      "group": "2 юаня",
+      "cost": 2,
+      "boostersCount": 30,
+      "description": "6 карт в паке, 30 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 6,
+        "perPack": [],
+        "perBox": [
+          {
+            "rarity": "R",
+            "sure": 0,
+            "expected": 100
+          },
+          {
+            "rarity": "SR",
+            "sure": 0,
+            "expected": 42
+          },
+          {
+            "rarity": "CR",
+            "sure": 0,
+            "expected": 20
+          },
+          {
+            "rarity": "SCR",
+            "sure": 0,
+            "expected": 10
+          },
+          {
+            "rarity": "SSR",
+            "sure": 0,
+            "expected": 5.764705882352941
+          },
+          {
+            "rarity": "SER",
+            "sure": 0,
+            "expected": 0.8235294117647058
+          },
+          {
+            "rarity": "UR",
+            "sure": 0,
+            "expected": 0.5
+          },
+          {
+            "rarity": "PTR",
+            "sure": 0,
+            "expected": 0.5
+          },
+          {
+            "rarity": "MSR",
+            "sure": 0,
+            "expected": 0.4117647058823529
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 30
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 46,
+      "setId": 108,
+      "setName": "NS-02-M13",
+      "title": "NS-02-M13",
+      "group": "2 юаня",
+      "cost": 2,
+      "boostersCount": 30,
+      "description": "6 карт в паке, 30 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 6,
+        "perPack": [],
+        "perBox": [
+          {
+            "rarity": "R",
+            "sure": 0,
+            "expected": 100
+          },
+          {
+            "rarity": "SR",
+            "sure": 0,
+            "expected": 42
+          },
+          {
+            "rarity": "CR",
+            "sure": 0,
+            "expected": 20
+          },
+          {
+            "rarity": "SCR",
+            "sure": 0,
+            "expected": 10
+          },
+          {
+            "rarity": "SSR",
+            "sure": 0,
+            "expected": 5.764705882352941
+          },
+          {
+            "rarity": "SER",
+            "sure": 0,
+            "expected": 0.8235294117647058
+          },
+          {
+            "rarity": "UR",
+            "sure": 0,
+            "expected": 0.5
+          },
+          {
+            "rarity": "PTR",
+            "sure": 0,
+            "expected": 0.5
+          },
+          {
+            "rarity": "MSR",
+            "sure": 0,
+            "expected": 0.4117647058823529
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 30
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 47,
+      "setId": 117,
+      "setName": "NS-02-M14",
+      "title": "NS-02-M14",
+      "group": "2 юаня",
+      "cost": 2,
+      "boostersCount": 30,
+      "description": "6 карт в паке, 30 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 6,
+        "perPack": [],
+        "perBox": [
+          {
+            "rarity": "R",
+            "sure": 0,
+            "expected": 100
+          },
+          {
+            "rarity": "SR",
+            "sure": 0,
+            "expected": 42
+          },
+          {
+            "rarity": "CR",
+            "sure": 0,
+            "expected": 20
+          },
+          {
+            "rarity": "SCR",
+            "sure": 0,
+            "expected": 10
+          },
+          {
+            "rarity": "SSR",
+            "sure": 0,
+            "expected": 5.764705882352941
+          },
+          {
+            "rarity": "SER",
+            "sure": 0,
+            "expected": 0.8235294117647058
+          },
+          {
+            "rarity": "UR",
+            "sure": 0,
+            "expected": 0.5
+          },
+          {
+            "rarity": "PTR",
+            "sure": 0,
+            "expected": 0.5
+          },
+          {
+            "rarity": "MSR",
+            "sure": 0,
+            "expected": 0.4117647058823529
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 30
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 52,
+      "setId": 129,
+      "setName": "NS-02-M16",
+      "title": "NS-02-M16",
+      "group": "2 юаня",
+      "cost": 2,
+      "boostersCount": 30,
+      "description": "6 карт в паке, 30 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 30,
+        "cardsPerPack": 6,
+        "perPack": [],
+        "perBox": [
+          {
+            "rarity": "R",
+            "sure": 0,
+            "expected": 100
+          },
+          {
+            "rarity": "SR",
+            "sure": 0,
+            "expected": 42
+          },
+          {
+            "rarity": "CR",
+            "sure": 0,
+            "expected": 20
+          },
+          {
+            "rarity": "SCR",
+            "sure": 0,
+            "expected": 10
+          },
+          {
+            "rarity": "SSR",
+            "sure": 0,
+            "expected": 5.764705882352941
+          },
+          {
+            "rarity": "SER",
+            "sure": 0,
+            "expected": 0.8235294117647058
+          },
+          {
+            "rarity": "UR",
+            "sure": 0,
+            "expected": 0.5
+          },
+          {
+            "rarity": "PTR",
+            "sure": 0,
+            "expected": 0.5
+          },
+          {
+            "rarity": "MSR",
+            "sure": 0,
+            "expected": 0.4117647058823529
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 30
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 37,
+      "setId": 15,
+      "setName": "NS-05-M01",
+      "title": "NS-05-M01",
+      "group": "5 юаней",
+      "cost": 5,
+      "boostersCount": 20,
+      "description": "8 карт в паке, 20 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 20,
+        "cardsPerPack": 8,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          },
+          {
+            "rarity": "SR",
+            "count": 3
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SSR",
+            "sure": 18,
+            "expected": 0
+          },
+          {
+            "rarity": "PTR",
+            "sure": 1,
+            "expected": 0
+          },
+          {
+            "rarity": "MR",
+            "sure": 0,
+            "expected": 0.7
+          },
+          {
+            "rarity": "ZR",
+            "sure": 0,
+            "expected": 0.3
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 20
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 36,
+      "setId": 16,
+      "setName": "NS-05-M02",
+      "title": "NS-05-M02",
+      "group": "5 юаней",
+      "cost": 5,
+      "boostersCount": 20,
+      "description": "8 карт в паке, 20 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 20,
+        "cardsPerPack": 8,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          },
+          {
+            "rarity": "SR",
+            "count": 3
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SSR",
+            "sure": 18,
+            "expected": 0
+          },
+          {
+            "rarity": "PTR",
+            "sure": 1,
+            "expected": 0
+          },
+          {
+            "rarity": "[object Object]",
+            "sure": 0,
+            "expected": 0.7
+          },
+          {
+            "rarity": "ZR",
+            "sure": 0,
+            "expected": 0.3
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 20
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 35,
+      "setId": 17,
+      "setName": "NS-05-M03",
+      "title": "NS-05-M03",
+      "group": "5 юаней",
+      "cost": 5,
+      "boostersCount": 20,
+      "description": "8 карт в паке, 20 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 20,
+        "cardsPerPack": 8,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          },
+          {
+            "rarity": "SR",
+            "count": 3
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SSR",
+            "sure": 18,
+            "expected": 0
+          },
+          {
+            "rarity": "PTR",
+            "sure": 1,
+            "expected": 0
+          },
+          {
+            "rarity": "MR",
+            "sure": 0,
+            "expected": 0.7
+          },
+          {
+            "rarity": "ZR",
+            "sure": 0,
+            "expected": 0.3
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 20
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 34,
+      "setId": 18,
+      "setName": "NS-05-M04",
+      "title": "NS-05-M04",
+      "group": "5 юаней",
+      "cost": 5,
+      "boostersCount": 20,
+      "description": "8 карт в паке, 20 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 20,
+        "cardsPerPack": 8,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          },
+          {
+            "rarity": "SR",
+            "count": 3
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SSR",
+            "sure": 18,
+            "expected": 0
+          },
+          {
+            "rarity": "PTR",
+            "sure": 1,
+            "expected": 0
+          },
+          {
+            "rarity": "MR",
+            "sure": 0,
+            "expected": 0.7
+          },
+          {
+            "rarity": "ZR",
+            "sure": 0,
+            "expected": 0.3
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 20
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 33,
+      "setId": 19,
+      "setName": "NS-05-M05",
+      "title": "NS-05-M05",
+      "group": "5 юаней",
+      "cost": 5,
+      "boostersCount": 20,
+      "description": "8 карт в паке, 20 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 20,
+        "cardsPerPack": 8,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          },
+          {
+            "rarity": "SR",
+            "count": 3
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SSR",
+            "sure": 18,
+            "expected": 0
+          },
+          {
+            "rarity": "PTR",
+            "sure": 1,
+            "expected": 0
+          },
+          {
+            "rarity": "MR",
+            "sure": 0,
+            "expected": 0.6666666666666666
+          },
+          {
+            "rarity": "ZR",
+            "sure": 0,
+            "expected": 0.22222222222222224
+          },
+          {
+            "rarity": "XR",
+            "sure": 0,
+            "expected": 0.11111111111111112
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 20
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 32,
+      "setId": 20,
+      "setName": "NS-05-M06",
+      "title": "NS-05-M06",
+      "group": "5 юаней",
+      "cost": 5,
+      "boostersCount": 20,
+      "description": "8 карт в паке, 20 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 20,
+        "cardsPerPack": 8,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          },
+          {
+            "rarity": "SR",
+            "count": 3
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SSR",
+            "sure": 18,
+            "expected": 0
+          },
+          {
+            "rarity": "PTR",
+            "sure": 1,
+            "expected": 0
+          },
+          {
+            "rarity": "MR",
+            "sure": 0,
+            "expected": 0.6666666666666666
+          },
+          {
+            "rarity": "ZR",
+            "sure": 0,
+            "expected": 0.22222222222222224
+          },
+          {
+            "rarity": "XR",
+            "sure": 0,
+            "expected": 0.11111111111111112
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 20
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 31,
+      "setId": 32,
+      "setName": "NS-05-M07",
+      "title": "NS-05-M07",
+      "group": "5 юаней",
+      "cost": 5,
+      "boostersCount": 20,
+      "description": "8 карт в паке, 20 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 20,
+        "cardsPerPack": 8,
+        "perPack": [
+          {
+            "rarity": "R",
+            "count": 4
+          },
+          {
+            "rarity": "SR",
+            "count": 3
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SSR",
+            "sure": 18,
+            "expected": 0
+          },
+          {
+            "rarity": "INS",
+            "sure": 1,
+            "expected": 0
+          },
+          {
+            "rarity": "MR",
+            "sure": 0,
+            "expected": 0.5
+          },
+          {
+            "rarity": "ZR",
+            "sure": 0,
+            "expected": 0.3
+          },
+          {
+            "rarity": "XR",
+            "sure": 0,
+            "expected": 0.15
+          },
+          {
+            "rarity": "SZR",
+            "sure": 0,
+            "expected": 0.05
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 20
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 39,
+      "setId": 38,
+      "setName": "NS-05-M08",
+      "title": "NS-05-M08",
+      "group": "5 юаней",
+      "cost": 5,
+      "boostersCount": 20,
+      "description": "8 карт в паке, 20 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 20,
+        "cardsPerPack": 8,
+        "perPack": [],
+        "perBox": [
+          {
+            "rarity": "R",
+            "sure": 0,
+            "expected": 53.333333333333336
+          },
+          {
+            "rarity": "SR",
+            "sure": 0,
+            "expected": 48.421052631578945
+          },
+          {
+            "rarity": "CR",
+            "sure": 0,
+            "expected": 26.666666666666668
+          },
+          {
+            "rarity": "SSR",
+            "sure": 18,
+            "expected": 0
+          },
+          {
+            "rarity": "SCR",
+            "sure": 0,
+            "expected": 11.578947368421053
+          },
+          {
+            "rarity": "INS",
+            "sure": 1,
+            "expected": 0
+          },
+          {
+            "rarity": "MR",
+            "sure": 0,
+            "expected": 0.5
+          },
+          {
+            "rarity": "ZR",
+            "sure": 0,
+            "expected": 0.3
+          },
+          {
+            "rarity": "XR",
+            "sure": 0,
+            "expected": 0.15
+          },
+          {
+            "rarity": "SZR",
+            "sure": 0,
+            "expected": 0.05
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 20
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 43,
+      "setId": 97,
+      "setName": "NS-05-M09",
+      "title": "NS-05-M09",
+      "group": "5 юаней",
+      "cost": 5,
+      "boostersCount": 20,
+      "description": "7 карт в паке, 20 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 20,
+        "cardsPerPack": 7,
+        "perPack": [],
+        "perBox": [
+          {
+            "rarity": "SR",
+            "sure": 0,
+            "expected": 48.421052631578945
+          },
+          {
+            "rarity": "R",
+            "sure": 0,
+            "expected": 40
+          },
+          {
+            "rarity": "CR",
+            "sure": 0,
+            "expected": 20
+          },
+          {
+            "rarity": "SSR",
+            "sure": 15,
+            "expected": 0
+          },
+          {
+            "rarity": "SCR",
+            "sure": 0,
+            "expected": 11.578947368421053
+          },
+          {
+            "rarity": "MR",
+            "sure": 1,
+            "expected": 0
+          },
+          {
+            "rarity": "TR",
+            "sure": 1,
+            "expected": 0
+          },
+          {
+            "rarity": "INS",
+            "sure": 1,
+            "expected": 0
+          },
+          {
+            "rarity": "ZR",
+            "sure": 0,
+            "expected": 0.46511627906976744
+          },
+          {
+            "rarity": "MTL",
+            "sure": 0,
+            "expected": 0.33333333333333337
+          },
+          {
+            "rarity": "WTR",
+            "sure": 0,
+            "expected": 0.33333333333333337
+          },
+          {
+            "rarity": "ACR",
+            "sure": 0,
+            "expected": 0.33333333333333337
+          },
+          {
+            "rarity": "XR",
+            "sure": 0,
+            "expected": 0.23255813953488372
+          },
+          {
+            "rarity": "TGR",
+            "sure": 0,
+            "expected": 0.186046511627907
+          },
+          {
+            "rarity": "SZR",
+            "sure": 0,
+            "expected": 0.11627906976744186
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 0,
+            "expected": 0.7,
+            "pack": 20
+          },
+          {
+            "rarity": "HR",
+            "sure": 0,
+            "expected": 0.3,
+            "pack": 20
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 50,
+      "setId": 119,
+      "setName": "NS-05-M10",
+      "title": "NS-05-M10",
+      "group": "5 юаней",
+      "cost": 5,
+      "boostersCount": 20,
+      "description": "7 карт в паке, 20 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 20,
+        "cardsPerPack": 7,
+        "perPack": [],
+        "perBox": [
+          {
+            "rarity": "SR",
+            "sure": 0,
+            "expected": 50
+          },
+          {
+            "rarity": "R",
+            "sure": 0,
+            "expected": 40
+          },
+          {
+            "rarity": "CR",
+            "sure": 0,
+            "expected": 20
+          },
+          {
+            "rarity": "SCR",
+            "sure": 0,
+            "expected": 10
+          },
+          {
+            "rarity": "SSR",
+            "sure": 10,
+            "expected": 0
+          },
+          {
+            "rarity": "BHR",
+            "sure": 6,
+            "expected": 0
+          },
+          {
+            "rarity": "SD",
+            "sure": 1,
+            "expected": 0
+          },
+          {
+            "rarity": "SSD",
+            "sure": 1,
+            "expected": 0
+          },
+          {
+            "rarity": "TGR",
+            "sure": 0,
+            "expected": 0.7000000000000001
+          },
+          {
+            "rarity": "MR",
+            "sure": 0,
+            "expected": 0.7
+          },
+          {
+            "rarity": "ZR",
+            "sure": 0,
+            "expected": 0.3
+          },
+          {
+            "rarity": "XR",
+            "sure": 0,
+            "expected": 0.20000000000000004
+          },
+          {
+            "rarity": "SZR",
+            "sure": 0,
+            "expected": 0.10000000000000002
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 0,
+            "expected": 0.7,
+            "pack": 20
+          },
+          {
+            "rarity": "HR",
+            "sure": 0,
+            "expected": 0.3,
+            "pack": 20
+          },
+          {
+            "rarity": "ACR",
+            "sure": 0,
+            "expected": 0.25,
+            "pack": 20
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 13,
+      "setId": 21,
+      "setName": "NS-10-M01",
+      "title": "NS-10-M01",
+      "group": "10 юаней",
+      "cost": 10,
+      "boostersCount": 18,
+      "description": "5 карт в паке, 18 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 18,
+        "cardsPerPack": 5,
+        "perPack": [
+          {
+            "rarity": "SR",
+            "count": 3
+          },
+          {
+            "rarity": "FR",
+            "count": 1
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SSR",
+            "sure": 15,
+            "expected": 0
+          },
+          {
+            "rarity": "MR",
+            "sure": 1,
+            "expected": 0.6
+          },
+          {
+            "rarity": "NTR",
+            "sure": 0,
+            "expected": 0.8
+          },
+          {
+            "rarity": "SP",
+            "sure": 0,
+            "expected": 0.6
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 18
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 12,
+      "setId": 22,
+      "setName": "NS-10-M02",
+      "title": "NS-10-M02",
+      "group": "10 юаней",
+      "cost": 10,
+      "boostersCount": 18,
+      "description": "5 карт в паке, 18 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 18,
+        "cardsPerPack": 5,
+        "perPack": [
+          {
+            "rarity": "SR",
+            "count": 3
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "FR",
+            "sure": 17,
+            "expected": 0
+          },
+          {
+            "rarity": "SSR",
+            "sure": 15,
+            "expected": 0
+          },
+          {
+            "rarity": "MR",
+            "sure": 1,
+            "expected": 0.7
+          },
+          {
+            "rarity": "FRR",
+            "sure": 1,
+            "expected": 0
+          },
+          {
+            "rarity": "BGL",
+            "sure": 0,
+            "expected": 0.6333333333333333
+          },
+          {
+            "rarity": "SP",
+            "sure": 0,
+            "expected": 0.5
+          },
+          {
+            "rarity": "BW",
+            "sure": 0,
+            "expected": 0.16666666666666666
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 18
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 11,
+      "setId": 23,
+      "setName": "NS-10-M03",
+      "title": "NS-10-M03",
+      "group": "10 юаней",
+      "cost": 10,
+      "boostersCount": 15,
+      "description": "5 карт в паке, 15 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 15,
+        "cardsPerPack": 5,
+        "perPack": [
+          {
+            "rarity": "SR",
+            "count": 3
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "FR",
+            "sure": 14,
+            "expected": 0
+          },
+          {
+            "rarity": "SSR",
+            "sure": 12,
+            "expected": 0
+          },
+          {
+            "rarity": "MR",
+            "sure": 1,
+            "expected": 0.7
+          },
+          {
+            "rarity": "FRR",
+            "sure": 1,
+            "expected": 0
+          },
+          {
+            "rarity": "DSR",
+            "sure": 0,
+            "expected": 0.6333333333333333
+          },
+          {
+            "rarity": "SP",
+            "sure": 0,
+            "expected": 0.5
+          },
+          {
+            "rarity": "BW",
+            "sure": 0,
+            "expected": 0.16666666666666666
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 18
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 9,
+      "setId": 24,
+      "setName": "NS-10-M04",
+      "title": "NS-10-M04",
+      "group": "10 юаней",
+      "cost": 10,
+      "boostersCount": 15,
+      "description": "4 карт в паке, 15 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 15,
+        "cardsPerPack": 4,
+        "perPack": [
+          {
+            "rarity": "SR",
+            "count": 2
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "FR",
+            "sure": 14,
+            "expected": 0
+          },
+          {
+            "rarity": "SSR",
+            "sure": 13,
+            "expected": 0
+          },
+          {
+            "rarity": "FRR",
+            "sure": 1,
+            "expected": 0
+          },
+          {
+            "rarity": "CP",
+            "sure": 0,
+            "expected": 0.49586776859504134
+          },
+          {
+            "rarity": "MR",
+            "sure": 0,
+            "expected": 0.4444444444444444
+          },
+          {
+            "rarity": "SP",
+            "sure": 0,
+            "expected": 0.4444444444444444
+          },
+          {
+            "rarity": "LP",
+            "sure": 0,
+            "expected": 0.1652892561983471
+          },
+          {
+            "rarity": "MR/199",
+            "sure": 0,
+            "expected": 0.1652892561983471
+          },
+          {
+            "rarity": "NNS",
+            "sure": 0,
+            "expected": 0.1652892561983471
+          },
+          {
+            "rarity": "BW",
+            "sure": 0,
+            "expected": 0.08333333333333333
+          },
+          {
+            "rarity": "LP/99",
+            "sure": 0,
+            "expected": 0.027777777777777776
+          },
+          {
+            "rarity": "RDM",
+            "sure": 0,
+            "expected": 0.008264462809917356
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 15
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 8,
+      "setId": 36,
+      "setName": "NS-10-M05",
+      "title": "NS-10-M05",
+      "group": "10 юаней",
+      "cost": 10,
+      "boostersCount": 18,
+      "description": "4 карт в паке, 18 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 18,
+        "cardsPerPack": 4,
+        "perPack": [
+          {
+            "rarity": "SR",
+            "count": 2
+          },
+          {
+            "rarity": "FR",
+            "count": 1
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SSR",
+            "sure": 15,
+            "expected": 0
+          },
+          {
+            "rarity": "INS",
+            "sure": 0,
+            "expected": 0.831946755407654
+          },
+          {
+            "rarity": "SZR",
+            "sure": 0,
+            "expected": 0.5
+          },
+          {
+            "rarity": "LP",
+            "sure": 0,
+            "expected": 0.4444444444444444
+          },
+          {
+            "rarity": "SP",
+            "sure": 0,
+            "expected": 0.3333333333333333
+          },
+          {
+            "rarity": "GP",
+            "sure": 0,
+            "expected": 0.3333333333333333
+          },
+          {
+            "rarity": "MR",
+            "sure": 0,
+            "expected": 0.16666666666666666
+          },
+          {
+            "rarity": "BW",
+            "sure": 0,
+            "expected": 0.16666666666666666
+          },
+          {
+            "rarity": "SC",
+            "sure": 0,
+            "expected": 0.1663893510815308
+          },
+          {
+            "rarity": "QN",
+            "sure": 0,
+            "expected": 0.05555555555555555
+          },
+          {
+            "rarity": "RDM",
+            "sure": 0,
+            "expected": 0.0016638935108153079
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 18
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 44,
+      "setId": 110,
+      "setName": "NS-10-M06",
+      "title": "NS-10-M06",
+      "group": "10 юаней",
+      "cost": 10,
+      "boostersCount": 18,
+      "description": "5 карт в паке, 18 паков в боксе, +1 PR",
+      "odds": {
+        "boostersCount": 18,
+        "cardsPerPack": 5,
+        "perPack": [
+          {
+            "rarity": "FR",
+            "count": 1
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SR",
+            "sure": 0,
+            "expected": 40.5
+          },
+          {
+            "rarity": "SCR",
+            "sure": 0,
+            "expected": 13.5
+          },
+          {
+            "rarity": "SSR",
+            "sure": 12,
+            "expected": 0.831946755407654
+          },
+          {
+            "rarity": "TR",
+            "sure": 0,
+            "expected": 0.6666666666666666
+          },
+          {
+            "rarity": "BHR",
+            "sure": 0,
+            "expected": 0.6666666666666666
+          },
+          {
+            "rarity": "LP",
+            "sure": 0,
+            "expected": 0.5
+          },
+          {
+            "rarity": "SLP",
+            "sure": 0,
+            "expected": 0.5
+          },
+          {
+            "rarity": "COM",
+            "sure": 0,
+            "expected": 0.5
+          },
+          {
+            "rarity": "SP",
+            "sure": 0,
+            "expected": 0.3333333333333333
+          },
+          {
+            "rarity": "SD",
+            "sure": 0,
+            "expected": 0.3333333333333333
+          },
+          {
+            "rarity": "MR",
+            "sure": 0,
+            "expected": 0.3333333333333333
+          },
+          {
+            "rarity": "SCP",
+            "sure": 0,
+            "expected": 0.3333333333333333
+          },
+          {
+            "rarity": "SSD",
+            "sure": 0,
+            "expected": 0.16666666666666666
+          },
+          {
+            "rarity": "BW",
+            "sure": 0,
+            "expected": 0.16666666666666666
+          },
+          {
+            "rarity": "SFR",
+            "sure": 0,
+            "expected": 0.16666666666666666
+          },
+          {
+            "rarity": "MFR",
+            "sure": 0,
+            "expected": 0.16666666666666666
+          },
+          {
+            "rarity": "SWR",
+            "sure": 0,
+            "expected": 0.16666666666666666
+          },
+          {
+            "rarity": "SC",
+            "sure": 0,
+            "expected": 0.1663893510815308
+          },
+          {
+            "rarity": "RDM",
+            "sure": 0,
+            "expected": 0.0016638935108153079
+          }
+        ],
+        "bonus": [
+          {
+            "rarity": "PR",
+            "sure": 1,
+            "expected": 0,
+            "pack": 18
+          }
+        ],
+        "godpacks": 0
+      }
+    },
+    {
+      "id": 40,
+      "setId": 30,
+      "setName": "NNS-02",
+      "title": "NNS-02",
+      "group": "Суприм",
+      "cost": 20,
+      "boostersCount": 24,
+      "description": "10 карт в паке, 24 паков в боксе",
+      "odds": {
+        "boostersCount": 24,
+        "cardsPerPack": 10,
+        "perPack": [
+          {
+            "rarity": "SER",
+            "count": 7
+          },
+          {
+            "rarity": "LSP",
+            "count": 1
+          },
+          {
+            "rarity": "MR",
+            "count": 1
+          }
+        ],
+        "perBox": [
+          {
+            "rarity": "SER",
+            "sure": 0,
+            "expected": 22.37686642794406
+          },
+          {
+            "rarity": "JNH",
+            "sure": 0,
+            "expected": 0.6486048239983785
+          },
+          {
+            "rarity": "SD",
+            "sure": 0,
+            "expected": 0.4864536179987839
+          },
+          {
+            "rarity": "GP",
+            "sure": 0,
+            "expected": 0.40537801499898657
+          },
+          {
+            "rarity": "PTR",
+            "sure": 0,
+            "expected": 0.08107560299979731
+          },
+          {
+            "rarity": "RDM",
+            "sure": 0,
+            "expected": 0.0016215120599959462
+          }
+        ],
+        "bonus": [],
+        "godpacks": 0
+      }
+    }
+  ]
+}

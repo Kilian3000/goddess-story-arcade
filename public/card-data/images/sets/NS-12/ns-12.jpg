@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta id="viewport-meta" name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <script>
+      if (window.navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches) {
+        document.documentElement.classList.add("standalone-app");
+        document
+          .getElementById("viewport-meta")
+          .setAttribute(
+            "content",
+            "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+          );
+      }
+    </script>
+    <title>Goddess Story Kartenkatalog</title>
+    <meta name="theme-color" content="#11182c" />
+    <meta name="application-name" content="Goddess Story" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Goddess Story" />
+    <link rel="manifest" href="/manifest.json?v=3" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/goddess-story-icon-v3-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/goddess-story-icon-v3-apple-touch-icon.png" />
+    <link rel="stylesheet" href="./styles.css?v=20260721-01" />
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sidebar__header">
+          <div class="sidebar__title-row">
+            <h1>Goddess Story</h1>
+            <div class="sidebar__actions">
+              <select id="profile-select" class="profile-select" aria-label="Aktive Sammlung">
+                <option value="kilian">Kilian</option>
+                <option value="robert">Robert</option>
+                <option value="leon">Leon</option>
+                <option value="all">Alle</option>
+              </select>
+              <button id="luck-meter-open" class="button button--ghost button--small view-shortcut" type="button">
+                Luck Meter
+              </button>
+            </div>
+          </div>
+          <p>Lokaler Kartenkatalog mit allen exportierten Set- und Kartendaten.</p>
+          <div id="profile-legend" class="profile-legend" hidden>
+            <span class="profile-legend__item"><span class="profile-legend__swatch profile-legend__swatch--kilian"></span>Kilian</span>
+            <span class="profile-legend__item"><span class="profile-legend__swatch profile-legend__swatch--robert"></span>Robert</span>
+            <span class="profile-legend__item"><span class="profile-legend__swatch profile-legend__swatch--leon"></span>Leon</span>
+          </div>
+          <div id="sync-status" class="status-banner status-banner--muted">
+            Sammlung wird geladen...
+          </div>
+        </div>
+
+        <div class="tab-switcher tab-switcher--quad">
+          <button id="catalog-tab" class="tab-button" type="button">Katalog</button>
+          <button id="collection-tab" class="tab-button is-active" type="button">Sammlung</button>
+          <button id="scanner-tab" class="tab-button tab-button--scanner" type="button">Scanner</button>
+          <span class="tab-button tab-button--future" aria-hidden="true"></span>
+        </div>
+
+        <div id="luck-sidebar-summary" class="panel luck-sidebar-summary" hidden></div>
+
+        <div id="catalog-controls">
+          <div class="panel catalog-filter-panel catalog-filter-panel--primary">
+            <div class="catalog-panel-heading">
+              <span class="catalog-panel-heading__eyebrow">Archivsuche</span>
+              <strong>Karten finden</strong>
+            </div>
+            <label class="field">
+              <span>Suche</span>
+              <input id="search-input" type="search" placeholder="Set, Nummer, Charakter oder Code wie NS-12SSR-09" />
+            </label>
+
+            <label class="field">
+              <span>Pack-Wert</span>
+              <select id="group-select">
+                <option value="">Alle Gruppen</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Serie</span>
+              <select id="series-select">
+                <option value="">Alle Serien</option>
+              </select>
+            </label>
+
+            <label class="checkbox">
+              <input id="spoiler-toggle" type="checkbox" />
+              <span>Spoiler-Modus</span>
+            </label>
+
+            <button id="clear-filters" class="button button--ghost" type="button">Filter zurücksetzen</button>
+          </div>
+
+          <details class="panel collapsible-panel catalog-filter-panel">
+            <summary class="collapsible-panel__summary">
+              <strong>Seltenheiten</strong>
+              <span id="rarity-summary" class="collapsible-panel__meta"></span>
+              <span class="collapsible-panel__arrow" aria-hidden="true"></span>
+            </summary>
+            <div class="collapsible-panel__content">
+              <div class="rarity-filter__actions">
+                <button id="select-all-rarities" class="button button--ghost button--small" type="button">Alle auswählen</button>
+                <button id="deselect-all-rarities" class="button button--ghost button--small" type="button">Alle abwählen</button>
+              </div>
+              <div id="rarity-filter" class="rarity-filter" role="group" aria-label="Seltenheiten filtern"></div>
+            </div>
+          </details>
+
+          <details class="panel collapsible-panel catalog-filter-panel catalog-set-panel">
+            <summary class="collapsible-panel__summary">
+              <strong>Sets</strong>
+              <span id="set-panel-summary" class="collapsible-panel__meta"></span>
+              <span class="collapsible-panel__arrow" aria-hidden="true"></span>
+            </summary>
+            <div class="collapsible-panel__content">
+              <button id="clear-set" class="button button--ghost button--small collapsible-panel__clear" type="button">Auswahl löschen</button>
+              <div id="set-list" class="set-list"></div>
+            </div>
+          </details>
+
+          <div class="panel stats catalog-stats-panel" id="stats-panel"></div>
+        </div>
+
+        <div id="collection-controls" hidden>
+          <div class="panel collection-binders-panel">
+            <div class="collection-panel-heading">
+              <span>Deine Sammlung</span>
+              <h2>Binder-Regal</h2>
+            </div>
+            <div id="collection-summary" class="field-help collection-binders-panel__summary"></div>
+            <div class="collection-sort-grid">
+              <label class="field">
+                <span>Binder sortieren</span>
+                <select id="collection-set-sort">
+                  <option value="release-desc">Release: neu → alt</option>
+                  <option value="completion-desc">Fortschritt: hoch → niedrig</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Karten-Reihenfolge</span>
+                <select id="binder-sort">
+                  <option value="rarest">Selten → häufig</option>
+                  <option value="common">Häufig → selten</option>
+                </select>
+              </label>
+            </div>
+            <div id="collection-set-list" class="set-list"></div>
+          </div>
+
+          <details class="panel collection-actions-panel">
+            <summary class="collection-actions-panel__summary">
+              <span>
+                <small>Sicherung & Transfer</small>
+                <strong>Save verwalten</strong>
+              </span>
+              <span class="collapsible-panel__arrow" aria-hidden="true"></span>
+            </summary>
+            <div class="collection-actions-panel__content">
+              <button id="export-csv" class="button" type="button">Sammlung als CSV exportieren</button>
+              <label class="field">
+                <span>CSV-Import</span>
+                <select id="import-mode">
+                  <option value="merge">Mit bestehender Save mergen</option>
+                  <option value="replace">Bestehende Save komplett ersetzen</option>
+                </select>
+              </label>
+              <button id="import-csv" class="button button--ghost" type="button">CSV importieren</button>
+              <input id="import-csv-file" type="file" accept=".csv,text/csv" hidden />
+            </div>
+          </details>
+        </div>
+
+        <div id="scanner-controls" hidden>
+          <div class="panel scanner-sidebar-panel">
+            <div class="scanner-panel-heading">
+              <span>Lokale Bilderkennung</span>
+              <h2>Karten-Scanner</h2>
+            </div>
+
+            <div class="scanner-mode-switch" role="group" aria-label="Scan-Modus">
+              <button class="scanner-mode-button" type="button" data-scanner-mode="single" aria-pressed="false">
+                <strong>1 Karte</strong>
+                <small>Einzelfoto</small>
+              </button>
+              <button class="scanner-mode-button is-active" type="button" data-scanner-mode="page" aria-pressed="true">
+                <strong>9 Karten</strong>
+                <small>Binderseite</small>
+              </button>
+            </div>
+
+            <div class="scanner-capture-actions">
+              <button id="scanner-take-photo" class="button scanner-capture-button" type="button">
+                <span class="scanner-capture-button__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M8 6.5 9.4 4h5.2L16 6.5h3A2 2 0 0 1 21 8.5v9A2 2 0 0 1 19 19H5a2 2 0 0 1-2-2v-8.5a2 2 0 0 1 2-2h3Z"/><circle cx="12" cy="12.5" r="3.5"/></svg>
+                </span>
+                <span>Binderseite fotografieren</span>
+              </button>
+              <button id="scanner-pick-file" class="button button--ghost scanner-capture-button" type="button">
+                <span class="scanner-capture-button__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="m6 16 4-4 3 3 2-2 3 3"/><circle cx="15.5" cy="9" r="1.5"/></svg>
+                </span>
+                <span>Binderfoto auswählen</span>
+              </button>
+            </div>
+            <input id="scanner-camera-input" type="file" accept="image/*" capture="environment" hidden />
+            <input id="scanner-file-input" type="file" accept="image/*" multiple hidden />
+
+            <p id="scanner-profile-hint" class="scanner-profile-hint"></p>
+            <div id="scanner-server-status" class="scanner-server-status">Prüfe lokale Erkennung ...</div>
+          </div>
+
+          <details id="scanner-page-settings" class="panel scanner-settings-panel">
+            <summary class="collapsible-panel__summary">
+              <strong>Erkennung feinjustieren</strong>
+              <span class="collapsible-panel__meta">Expertenoption</span>
+              <span class="collapsible-panel__arrow" aria-hidden="true"></span>
+            </summary>
+            <div class="collapsible-panel__content">
+              <label class="field">
+                <span>Randkorrektur <strong id="scanner-inset-value">0%</strong></span>
+                <input id="scanner-inset" type="range" min="-8" max="12" value="0" step="1" />
+              </label>
+              <label id="scanner-gap-field" class="field">
+                <span>Raster-Abstand <strong id="scanner-gap-value">0%</strong></span>
+                <input id="scanner-gap" type="range" min="-3" max="8" value="0" step="1" />
+              </label>
+              <button id="scanner-rematch" class="button button--ghost" type="button" disabled>
+                Mit Korrektur erneut erkennen
+              </button>
+              <div id="scanner-manual-grid-controls" class="scanner-manual-grid-controls" hidden>
+                <button id="scanner-manual-grid" class="button button--ghost" type="button" disabled>
+                  Vier Ecken selbst setzen
+                </button>
+                <p>Ziehe die vier pinken Punkte auf die äußeren Ecken der 3×3-Binderseite.</p>
+                <button id="scanner-apply-manual-grid" class="button" type="button" hidden disabled>
+                  Manuelles Raster anwenden
+                </button>
+              </div>
+            </div>
+          </details>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div id="catalog-view">
+          <section id="catalog-showcase" class="catalog-showcase" aria-label="Top-Karten des Trios"></section>
+
+          <section id="summary-card" class="summary-card" hidden></section>
+
+          <section class="catalog-quickbar" aria-label="Schnellfilter">
+            <input id="collection-filter" type="hidden" value="all" />
+            <div id="catalog-quick-filters" class="catalog-quick-filters" role="group" aria-label="Karten schnell filtern">
+              <button class="catalog-quick-filter is-active" type="button" data-catalog-filter="all">Alle</button>
+              <button class="catalog-quick-filter" type="button" data-catalog-filter="owned">Gesammelt</button>
+              <button class="catalog-quick-filter" type="button" data-catalog-filter="missing">Fehlend</button>
+              <button class="catalog-quick-filter catalog-quick-filter--favorite" type="button" data-catalog-filter="favorites">
+                Favoriten
+              </button>
+            </div>
+            <div class="catalog-quickbar__tools">
+              <label class="catalog-sort-control">
+                <span>Rarität</span>
+                <select id="catalog-sort">
+                  <option value="rarest">Selten → häufig</option>
+                  <option value="common">Häufig → selten</option>
+                </select>
+              </label>
+              <button id="bulk-add-visible" class="button button--ghost catalog-bulk-button" type="button">Alle hinzufügen</button>
+              <button id="random-card" class="button button--ghost catalog-random-button" type="button">
+                <span aria-hidden="true">✦</span>
+                Zufall
+              </button>
+            </div>
+          </section>
+
+          <section class="toolbar">
+            <div id="results-text" class="results-text"></div>
+          </section>
+
+          <section id="card-grid" class="card-grid"></section>
+          <div class="catalog-load-more">
+            <button id="load-more" class="button" type="button" hidden>Mehr Karten laden</button>
+          </div>
+        </div>
+
+        <div id="collection-view" hidden>
+          <section class="toolbar toolbar--collection">
+            <div class="collection-heading">
+              <div id="collection-results" class="results-text"></div>
+              <button id="binder-fullscreen" class="button button--ghost button--small" type="button">
+                Binder-Vollbild
+              </button>
+            </div>
+            <div class="collection-nav">
+              <button id="collection-prev" class="button button--ghost button--small" type="button">← Vorherige</button>
+              <span id="collection-page-label" class="collection-page-label"></span>
+              <button id="collection-next" class="button button--ghost button--small" type="button">Nächste →</button>
+            </div>
+          </section>
+
+          <section id="collection-grid" class="collection-grid"></section>
+        </div>
+
+        <div id="scanner-view" hidden>
+          <section
+            id="scanner-empty"
+            class="scanner-dropzone"
+            role="button"
+            tabindex="0"
+            aria-label="Kartenfoto auswählen oder hier ablegen"
+          >
+            <div class="scanner-dropzone__inner">
+              <div class="scanner-dropzone__emblem" aria-hidden="true">
+                <span></span><span></span><span></span>
+              </div>
+              <strong>Foto auswählen oder hier ablegen</strong>
+              <p>Am besten gerade von oben, ohne Blitz und mit möglichst wenig Spiegelung.</p>
+              <span class="scanner-dropzone__hint">JPG, PNG, HEIC oder WebP · Handyfotos werden automatisch optimiert</span>
+            </div>
+          </section>
+
+          <section id="scanner-workspace" class="scanner-workspace" hidden>
+            <div class="scanner-workspace__topbar">
+              <div>
+                <span class="scanner-workspace__eyebrow">Scan-Vorschau</span>
+                <div id="scanner-analysis-status" class="scanner-status scanner-status--muted">Bereit.</div>
+                <div id="scanner-batch-status" class="scanner-batch-status" hidden></div>
+              </div>
+              <div class="scanner-workspace__actions">
+                <button id="scanner-add-files" class="button button--ghost button--small" type="button">
+                  Fotos hinzufügen
+                </button>
+                <button id="scanner-next-image" class="button button--ghost button--small" type="button" hidden>
+                  Nächstes Foto
+                </button>
+                <button id="scanner-stage-manual-grid" class="button button--ghost button--small" type="button" hidden>
+                  Raster korrigieren
+                </button>
+                <button id="scanner-stage-apply-grid" class="button button--small" type="button" hidden>
+                  Raster anwenden
+                </button>
+                <button id="scanner-reset" class="button button--ghost button--small" type="button">Anderes Foto</button>
+              </div>
+            </div>
+
+            <div class="scanner-stage-layout">
+              <div class="scanner-stage">
+                <img id="scanner-stage-image" alt="" />
+                <div id="scanner-grid-overlay" class="scanner-grid-overlay" hidden aria-hidden="true">
+                  <svg id="scanner-grid-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+                </div>
+              </div>
+              <aside class="scanner-photo-guide">
+                <span class="scanner-photo-guide__sparkle" aria-hidden="true">✦</span>
+                <strong>So wird der Scan genauer</strong>
+                <p>Halte die Kamera parallel zur Seite. Seitliches Licht verursacht weniger Reflexionen als ein direkter Blitz.</p>
+                <div class="scanner-photo-guide__privacy">100% lokale Erkennung</div>
+              </aside>
+            </div>
+
+            <section class="scanner-results">
+              <header class="scanner-results__header">
+                <div>
+                  <span>Trefferkontrolle</span>
+                  <h3>Stimmt jede Karte?</h3>
+                </div>
+                <p id="scanner-result-summary"></p>
+              </header>
+              <div id="scanner-review-grid" class="scanner-review-grid"></div>
+            </section>
+
+            <div class="scanner-actionbar">
+              <p>Nur angehakte Treffer werden gespeichert. Vorhandene Karten bleiben unverändert.</p>
+              <button id="scanner-accept" class="button" type="button" disabled>Keine Karte ausgewählt</button>
+            </div>
+          </section>
+        </div>
+
+        <div id="luck-view" hidden>
+          <section id="luck-dashboard" class="luck-dashboard"></section>
+        </div>
+      </main>
+    </div>
+
+    <button
+      id="catalog-scroll-top"
+      class="catalog-scroll-top"
+      type="button"
+      aria-label="Zurück nach oben"
+      aria-hidden="true"
+      tabindex="-1"
+    >
+      <span aria-hidden="true">↑</span>
+    </button>
+
+    <dialog id="card-modal" class="modal">
+      <div class="modal__content">
+        <button id="modal-close" class="modal__close" type="button" aria-label="Schließen">×</button>
+        <div class="modal__body" id="modal-body"></div>
+      </div>
+    </dialog>
+
+    <dialog id="image-modal" class="modal image-modal">
+      <div class="modal__content image-modal__content">
+        <button id="image-modal-close" class="modal__close" type="button" aria-label="Schließen">×</button>
+        <div class="image-modal__body">
+          <img id="image-modal-img" src="" alt="" />
+          <div id="image-modal-caption" class="image-modal__caption"></div>
+        </div>
+      </div>
+    </dialog>
+
+    <script src="./db.js?v=20260716-01"></script>
+    <script src="./config.js"></script>
+    <script src="./card-scanner.js?v=20260721-01"></script>
+    <script src="./app.js?v=20260720-01"></script>
+  </body>
+</html>

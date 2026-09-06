@@ -5171,41 +5171,32 @@ body {
   .pull-confetti, .mode-altar .reveal-burst, .mode-altar .card-spark { display: none; }
 }
 
-/* A held stack is one physical object; individual reveals remain independent. */
-.tactile-stack { perspective: 1100px; overflow: visible; }
-.stack-turntable { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform 240ms cubic-bezier(.2,.75,.2,1); }
-.tactile-stack.is-peeking .stack-turntable { transform: rotateX(var(--peek-x,5deg)) rotateY(var(--peek-y,27deg)) scale(1.04); }
-.mode-altar .tactile-stack .card-plane { overflow: visible; transform-style: preserve-3d; border-width: 1px; border-color: #e8e1ec; box-shadow: 0 7px 18px #08051144; -webkit-touch-callout: none; user-select: none; }
-.mode-altar .tactile-stack .card-plane.is-after {
-  z-index: calc(20 - var(--depth)); opacity: 1; filter: none; pointer-events: none;
-  border-left: 3px solid var(--edge-color);
-  transform: translate(calc(var(--depth) * 1px),calc(var(--depth) * -1px)) translateZ(calc(var(--depth) * -5px));
+/* Flat, isolated layers: no 3D stack sorting or transforms on the underlay. */
+.mode-altar .tactile-stack { perspective: none; transform-style: flat; isolation: isolate; overflow: visible; }
+.mode-altar .pack-card {
+  position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0;
+  display: block; border: 1px solid #e8e1ec; border-radius: 12px; overflow: hidden;
+  background: #17111d; box-shadow: 0 7px 18px #08051144;
+  visibility: hidden; pointer-events: none; transform: none; transition: none;
+  touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
+  transform-origin: 50% 85%; will-change: auto;
 }
-.mode-altar .tactile-stack .card-plane.is-current { z-index: 30; transform: translateZ(0); }
-.mode-altar .tactile-stack .card-plane.is-before { z-index: 40; opacity: 0; transform: translateX(-145%) rotateY(-25deg) rotateZ(-7deg); pointer-events: none; }
-.mode-altar .direction--1 .tactile-stack .card-plane.is-before { transform: translateX(-145%); }
-.mode-altar .tactile-stack .card-plane.is-current.is-dragging { transition: none; transform: translateX(var(--drag-x,0px)) rotateY(var(--drag-tilt,0deg)) rotateZ(var(--drag-rot,0deg)); }
-.mode-altar .tactile-stack.is-peeking .card-plane.is-after { transform: translateX(calc(var(--depth) * -3px)) translateZ(calc(var(--depth) * -6px)); }
-.tactile-stack .card-body { border-radius: inherit; background: #ede7ee; backface-visibility: hidden; }
-.stack-hidden-face { display: block; width: 100%; height: 100%; background: #e3dbe7; box-shadow: inset 0 0 0 2px var(--edge-color); border-radius: inherit; }
-.card-stock-edge {
-  position: absolute; left: -1px; top: 1%; width: 5px; height: 98%; pointer-events: none;
-  transform-origin: 0 50%; transform: rotateY(-90deg); background: var(--edge-color);
-  box-shadow: inset 1px 0 #fff9; border-radius: 2px;
-}
-.tactile-stack.is-peeking .card-holo { opacity: .42; background-position: 65% 50%; }
-.stack-peek-control { position: absolute; z-index: 10; right: 7%; bottom: 22%; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 16px; border: 1px solid #bc9dcf; border-radius: 7px; color: #f5e8ff; background: #251430; font: 700 14px/1 monospace; }
-.stack-peek-control span { font-size: 26px; }
-.mode-altar .stack-peek-control[aria-pressed="true"] { color: #2d1235; background: var(--ui-cream); }
+.mode-altar .pack-card > img { width: 100%; height: 100%; display: block; object-fit: contain; pointer-events: none; user-select: none; }
+.mode-altar .pack-card.is-front { z-index: 3; visibility: visible; pointer-events: auto; cursor: grab; will-change: transform; }
+.mode-altar .pack-card.is-front:active { cursor: grabbing; }
+.mode-altar .pack-card.is-front:focus-visible { outline: 3px solid var(--ui-yellow); outline-offset: 5px; }
+.mode-altar .pack-card.is-next { z-index: 2; visibility: visible; }
+.mode-altar .pack-card.is-previous { z-index: 2; }
+.mode-altar .tactile-stack[data-look-back] .pack-card.is-previous { visibility: visible; }
+.mode-altar .tactile-stack[data-look-back] .pack-card.is-next { visibility: hidden; }
+.pack-stock { position: absolute; inset: 0; z-index: 0; border-radius: 12px; box-shadow: 2px 2px 0 #b9abbf, 3px 3px 0 #282030, 4px 4px 0 #d2c7d6; pointer-events: none; }
 .stack-gesture-tip { position: absolute; z-index: 7; bottom: 13%; right: 5%; font-size: 14px; color: #cbb8d4; pointer-events: none; }
 .mode-altar .detail-hint { display: none; }
 @media (max-width: 700px) {
-  .mode-altar .stack-peek-control { right: 4px; top: 43%; bottom: auto; width: 44px; min-height: 56px; padding: 5px 2px; flex-direction: column; gap: 2px; font-size: 12px; background: #24112fdd; }
-  .mode-altar .nav-next { display: none; }
-  .mode-altar .stack-gesture-tip { top: 56px; bottom: auto; left: 0; right: 0; margin: 0; text-align: center; font-size: 12px; }
-  .mode-altar .tactile-stack .card-plane { box-shadow: 0 4px 10px #08051144; }
+  .mode-altar .nav-orb { display: none; }
+  .mode-altar .stack-gesture-tip { top: 56px; bottom: auto; left: 0; right: 0; margin: 0; text-align: center; font-size: 14px; }
+  .mode-altar .pack-card { box-shadow: 0 4px 10px #08051144; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .stack-turntable { transition: none; }
-  .tactile-stack.is-peeking .stack-turntable { transform: rotateY(18deg); }
+@media (max-width: 360px) {
+  .mode-altar .stack-gesture-tip { display: none; }
 }

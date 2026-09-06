@@ -192,7 +192,6 @@ export default function Home() {
     playFoil,
     playTear,
     playCardTravel,
-    playPeek,
     playReveal,
     playShrineDrop,
     playShrineBounce,
@@ -304,9 +303,7 @@ export default function Home() {
     if (!pack[index] || inputLock.current || index === activeIndex) return;
     const nextDirection: 1 | -1 = index > activeIndex ? 1 : -1;
     const fresh = index > revealedRef.current;
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const tier = rarityTier(pack[index].rarity);
-    const travelTime = reducedMotion ? 0 : 200;
     inputLock.current = true;
 
     if (fresh) {
@@ -328,12 +325,13 @@ export default function Home() {
         setFreshIndex(-1);
       }
     });
+    // Animation must not discard the next touch while it finishes.
+    inputLock.current = false;
     if (navigationTimer.current !== null) window.clearTimeout(navigationTimer.current);
     navigationTimer.current = window.setTimeout(() => {
       setTransitioning(false);
-      inputLock.current = false;
       navigationTimer.current = null;
-    }, travelTime);
+    }, 230);
   }, [activeIndex, pack, playCardTravel, playReveal]);
 
   const nextCard = useCallback(() => {
@@ -617,9 +615,9 @@ export default function Home() {
               <div className="reveal-halo" />
               {activeIndex === freshIndex && <div key={`${active.id}-${hitNonce}`} className={`reveal-burst burst-tier-${rarityTier(active.rarity)}`} aria-hidden="true"><i /><i /><i /><i /><strong>{active.rarity}</strong><b>{rarityTier(active.rarity) >= 4 ? "GODDESS HIT!" : rarityTier(active.rarity) >= 3 ? "JACKPOT PULL!" : rarityTier(active.rarity) >= 2 ? "SHINY!" : ""}<small>{rarityTier(active.rarity) >= 2 ? active.character : ""}</small></b></div>}
               <div className="reveal-index"><b>{String(activeIndex + 1).padStart(2, "0")}</b><span>/ {String(pack.length).padStart(2, "0")}</span><i>CARD</i></div>
-              <PackStack cards={pack.map(card => ({ id: card.id, image: cardImage(card), character: card.character, rarity: card.rarity, color: rarityColor(card.rarity) }))} activeIndex={activeIndex} locked={transitioning} onNext={nextCard} onPrevious={previousCard} onInspect={() => setInspectorOpen(true)} onPeek={() => { void playPeek(); }} />
-              <button className="nav-orb nav-previous" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); previousCard(); } }} onClick={(event) => { if (event.detail === 0) previousCard(); }} disabled={activeIndex === 0 || transitioning} aria-label="Vorherige Karte">←</button>
-              <button className="nav-orb nav-next" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); nextCard(); } }} onClick={(event) => { if (event.detail === 0) nextCard(); }} disabled={transitioning} aria-label={activeIndex === pack.length - 1 ? "Pack ansehen" : "Nächste Karte"}>→</button>
+              <PackStack cards={pack.map(card => ({ id: card.id, image: cardImage(card), character: card.character, rarity: card.rarity, color: rarityColor(card.rarity) }))} activeIndex={activeIndex} onNext={nextCard} onPrevious={previousCard} onInspect={() => setInspectorOpen(true)} />
+              <button className="nav-orb nav-previous" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); previousCard(); } }} onClick={(event) => { if (event.detail === 0) previousCard(); }} disabled={activeIndex === 0} aria-label="Vorherige Karte">←</button>
+              <button className="nav-orb nav-next" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); nextCard(); } }} onClick={(event) => { if (event.detail === 0) nextCard(); }} aria-label={activeIndex === pack.length - 1 ? "Pack ansehen" : "Nächste Karte"}>→</button>
               <div className="pull-caption" aria-live="polite" aria-atomic="true"><b style={{ color: rarityColor(active.rarity) }}>{active.rarity}</b><span><strong>{active.character || "Unknown character"}</strong><small>{active.title}</small></span></div>
               <div className="pull-trail" aria-label="Cards in this pack">{pack.map((card, index) => <button key={`${card.id}-${index}`} disabled={index > revealedThrough} aria-label={index <= revealedThrough ? `Card ${index + 1}: ${card.rarity} ${card.character}` : `Card ${index + 1}: unrevealed`} aria-current={index === activeIndex ? "step" : undefined} onClick={() => navigateCard(index)} style={{ "--pull-color": index <= revealedThrough ? rarityColor(card.rarity) : "#604568" } as CSSProperties}><i />{index <= revealedThrough ? card.rarity : "·"}</button>)}</div>
               <button className="detail-hint" onClick={() => setInspectorOpen(true)}><span>Swipe to reveal · Tap for details</span></button>
@@ -647,7 +645,7 @@ export default function Home() {
         {mode === "altar" && <div className="action-dock">
           {phase === "sealed" && <button className="primary-action" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); void openPack(); } }} onClick={(event) => { if (event.detail === 0) void openPack(); }} disabled={!dataReady}><span>RIP THIS BOOSTER</span><i>↗</i></button>}
           {phase === "opening" && <div className="opening-meter"><i /><span>DEALING YOUR CARDS</span></div>}
-          {phase === "revealing" && <button className="primary-action next-action" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); nextCard(); } }} onClick={(event) => { if (event.detail === 0) nextCard(); }} aria-disabled={transitioning}><span>{activeIndex === pack.length - 1 ? "SHOW FULL PACK" : "NEXT CARD"}<small>{activeIndex + 1} / {pack.length}</small></span><i>→</i></button>}
+          {phase === "revealing" && <button className="primary-action next-action" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); nextCard(); } }} onClick={(event) => { if (event.detail === 0) nextCard(); }}><span>{activeIndex === pack.length - 1 ? "SHOW FULL PACK" : "NEXT CARD"}<small>{activeIndex + 1} / {pack.length}</small></span><i>→</i></button>}
           {phase === "summary" && <button className="primary-action" onClick={prizeLock ? returnToGame : resetForAnother}><span>{prizeLock ? `BACK TO ${prizeReturnMode === "duel" ? "HEARTLOCK" : "WAIFU 21"}` : "OPEN ANOTHER"}</span><i>{prizeLock ? "←" : "↻"}</i></button>}
         </div>}
 

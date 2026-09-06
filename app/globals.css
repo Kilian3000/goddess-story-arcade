@@ -5171,32 +5171,79 @@ body {
   .pull-confetti, .mode-altar .reveal-burst, .mode-altar .card-spark { display: none; }
 }
 
-/* Flat, isolated layers: no 3D stack sorting or transforms on the underlay. */
+/* The fixed touch pad owns input; the presentation can tilt, lift and settle. */
 .mode-altar .tactile-stack { perspective: none; transform-style: flat; isolation: isolate; overflow: visible; }
+.pack-scene { position: absolute; inset: 0; --peek: 0; --shine-x: 50%; transform-origin: 50% 70%; transform-style: flat;
+  transform: perspective(1000px) translateX(calc(var(--peek) * 10px)) rotateY(calc(var(--peek) * 27deg)) rotateX(calc(var(--peek) * 7deg)) rotateZ(var(--peek-lean,0deg));
+  transition: transform 320ms cubic-bezier(.18,.85,.25,1);
+}
+.tactile-stack[data-touching] .pack-scene { transition-duration: 60ms; }
 .mode-altar .pack-card {
   position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0;
   display: block; border: 1px solid #e8e1ec; border-radius: 12px; overflow: hidden;
-  background: #17111d; box-shadow: 0 7px 18px #08051144;
-  visibility: hidden; pointer-events: none; transform: none; transition: none;
-  touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
-  transform-origin: 50% 85%; will-change: auto;
+  background: #17111d; box-shadow: 0 7px 18px #08051166;
+  visibility: hidden; pointer-events: none; transform: none; transition: box-shadow 160ms ease;
+  -webkit-user-select: none; user-select: none; transform-origin: 50% 85%;
 }
 .mode-altar .pack-card > img { width: 100%; height: 100%; display: block; object-fit: contain; pointer-events: none; user-select: none; }
-.mode-altar .pack-card.is-front { z-index: 3; visibility: visible; pointer-events: auto; cursor: grab; will-change: transform; }
-.mode-altar .pack-card.is-front:active { cursor: grabbing; }
-.mode-altar .pack-card.is-front:focus-visible { outline: 3px solid var(--ui-yellow); outline-offset: 5px; }
-.mode-altar .pack-card.is-next { z-index: 2; visibility: visible; }
-.mode-altar .pack-card.is-previous { z-index: 2; }
+.mode-altar .pack-card.is-front { z-index: 3; visibility: visible; will-change: transform; }
+.mode-altar .pack-card.is-next { z-index: 1; visibility: visible; }
+.mode-altar .pack-card.is-previous { z-index: 1; }
 .mode-altar .tactile-stack[data-look-back] .pack-card.is-previous { visibility: visible; }
 .mode-altar .tactile-stack[data-look-back] .pack-card.is-next { visibility: hidden; }
+.mode-altar .tactile-stack[data-touching] .pack-card.is-front { box-shadow: 0 20px 26px #08051188, 0 1px 0 #fff8; }
+.mode-altar .pack-touch-pad {
+  position: absolute; inset: -8px; z-index: 20; width: calc(100% + 16px); height: calc(100% + 16px);
+  margin: 0; padding: 0; border: 0; border-radius: 14px; background: transparent; box-shadow: none;
+  transform: none; clip-path: none; cursor: grab; touch-action: none;
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
+}
+.mode-altar .pack-touch-pad:active { cursor: grabbing; }
+.mode-altar .pack-touch-pad:focus-visible { outline: 3px solid var(--ui-yellow); outline-offset: 4px; }
 .pack-stock { position: absolute; inset: 0; z-index: 0; border-radius: 12px; box-shadow: 2px 2px 0 #b9abbf, 3px 3px 0 #282030, 4px 4px 0 #d2c7d6; pointer-events: none; }
-.stack-gesture-tip { position: absolute; z-index: 7; bottom: 13%; right: 5%; font-size: 14px; color: #cbb8d4; pointer-events: none; }
+.pack-peek-edges { position: absolute; inset: 0; z-index: 2; opacity: var(--peek); pointer-events: none; transition: opacity 180ms; }
+.pack-peek-edges i { position: absolute; inset: 0; border-radius: 12px; border: 1px solid #8b7c92; border-left: 4px solid var(--edge-color); background: #ded5e2;
+  transform: translateX(calc(var(--peek) * var(--edge) * -6px)); box-shadow: -1px 0 2px #130b1b55;
+  transition: transform 260ms cubic-bezier(.18,.85,.25,1);
+}
+.tactile-stack[data-touching] .pack-peek-edges i { transition-duration: 60ms; }
+.pack-face-shine { position: absolute; inset: 0; opacity: .08; pointer-events: none;
+  background: radial-gradient(ellipse at var(--shine-x) 20%, #fff9, transparent 60%);
+  mix-blend-mode: screen; transition: opacity 200ms;
+}
+.tactile-stack[data-peeking] .pack-face-shine, .tactile-stack[data-touching] .is-front .pack-face-shine { opacity: .38; }
+.pack-reveal-sheen { position: absolute; inset: -30% -90%; pointer-events: none; background: linear-gradient(110deg, transparent 40%, #fff9 49%, #fff2 54%, transparent 62%); mix-blend-mode: screen; animation: pack-sheen 620ms 60ms both; }
+@keyframes pack-sheen { from { transform: translateX(-55%); opacity: 0; } 25% { opacity: .55; } to { transform: translateX(55%); opacity: 0; } }
+.pack-reveal-light { position: absolute; inset: -12%; pointer-events: none; z-index: -1; border-radius: 50%;
+  background: radial-gradient(ellipse, transparent 45%, var(--rarity-color) 63%, transparent 72%);
+  animation: pack-light 600ms ease-out both;
+}
+@keyframes pack-light { from { transform: scale(.75); opacity: 0; } 22% { opacity: .32; } to { transform: scale(1.12); opacity: 0; } }
+.pack-reveal-light i { display: none; }
+.tactile-stack[data-tier="2"] .pack-reveal-light,
+.tactile-stack[data-tier="3"] .pack-reveal-light,
+.tactile-stack[data-tier="4"] .pack-reveal-light { animation-name: pack-rare-light; animation-duration: 850ms; }
+@keyframes pack-rare-light { from { transform: scale(.8); opacity: 0; } 18% { opacity: .75; } to { transform: scale(1.3); opacity: 0; } }
+.tactile-stack[data-tier="3"] .pack-reveal-light i, .tactile-stack[data-tier="4"] .pack-reveal-light i { display: block; position: absolute; top: 50%; left: 50%; width: 5px; height: 13px; border-radius: 50%; background: #fff5c9; box-shadow: 0 0 8px var(--rarity-color); animation: pack-orbit-spark 800ms ease-out both; }
+.pack-reveal-light i:nth-child(1) { --angle: 20deg; }.pack-reveal-light i:nth-child(2) { --angle: 80deg; }.pack-reveal-light i:nth-child(3) { --angle: 140deg; }.pack-reveal-light i:nth-child(4) { --angle: 200deg; }.pack-reveal-light i:nth-child(5) { --angle: 260deg; }.pack-reveal-light i:nth-child(6) { --angle: 320deg; }
+@keyframes pack-orbit-spark { from { transform: rotate(var(--angle)) translateY(110px) scale(0); opacity: 0; } 20% { opacity: 1; } to { transform: rotate(var(--angle)) translateY(280px) scale(.3); opacity: 0; } }
+.stack-gesture-controls { position: absolute; z-index: 9; right: 6%; bottom: 18%; display: flex; align-items: center; gap: 12px; }
+.mode-altar .stack-peek-control { display: flex; align-items: center; gap: 6px; min-height: 44px; padding: 8px 12px; border: 1px solid #b48cc6; border-radius: 6px; background: #25122d; color: #eeddef; font: 700 14px/1 monospace; box-shadow: 3px 3px 0 #100719; }
+.mode-altar .stack-peek-control[aria-pressed="true"] { color: #25122d; background: var(--ui-cream); }
+.stack-gesture-controls p { margin: 0; color: #e3d0ed; font-size: 14px; line-height: 1.4; }
+.stack-gesture-controls p span { color: #bda8c9; }
 .mode-altar .detail-hint { display: none; }
 @media (max-width: 700px) {
   .mode-altar .nav-orb { display: none; }
-  .mode-altar .stack-gesture-tip { top: 56px; bottom: auto; left: 0; right: 0; margin: 0; text-align: center; font-size: 14px; }
-  .mode-altar .pack-card { box-shadow: 0 4px 10px #08051144; }
+  .stack-gesture-controls { top: 56px; bottom: auto; right: 0; left: 0; justify-content: center; gap: 12px; }
+  .stack-gesture-controls p { font-size: 14px; }
 }
 @media (max-width: 360px) {
-  .mode-altar .stack-gesture-tip { display: none; }
+  .stack-gesture-controls { left: auto; right: 0; top: 82px; }
+  .stack-gesture-controls p { display: none; }
+  .mode-altar .stack-peek-control { padding: 8px; flex-direction: column; font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pack-scene, .pack-peek-edges, .pack-peek-edges i, .pack-face-shine { transition: none; }
+  .pack-reveal-light, .pack-reveal-sheen { display: none; }
 }

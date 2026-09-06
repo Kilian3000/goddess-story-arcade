@@ -236,6 +236,7 @@ export function useGachaAudio() {
   const musicEnabledRef = useRef(true);
   const musicTimer = useRef<number | null>(null);
   const musicStep = useRef(0);
+  const revealStep = useRef(0);
   const musicNextStepAt = useRef(0);
   const [muted, setMuted] = useState(false);
   const [musicEnabled, setMusicEnabled] = useState(true);
@@ -420,6 +421,7 @@ export function useGachaAudio() {
   }, [beginMusic, trigger]);
 
   const playTear = useCallback(() => trigger((current) => {
+      revealStep.current = 0;
       noiseBurst(current, 0, 0.22, 1700, 7400, 0.32, "bandpass");
       [0.018, 0.044, 0.075].forEach(delay => noiseBurst(current, delay, 0.03, 6800, 1900, 0.14, "highpass"));
       noiseBurst(current, 0.16, 0.2, 4800, 850, 0.12, "highpass");
@@ -437,6 +439,8 @@ export function useGachaAudio() {
 
   const playReveal = useCallback((rarity: string) => trigger((current) => {
     const tier = rarityTier(rarity);
+    const melody = [79, 81, 83, 86, 88, 91, 93, 95];
+    const pitch = melody[Math.min(revealStep.current++, melody.length - 1)];
     const now = current.context.currentTime;
     if (musicEnabledRef.current) {
       current.music.gain.cancelScheduledValues(now);
@@ -444,10 +448,10 @@ export function useGachaAudio() {
       current.music.gain.setTargetAtTime(MUSIC_LEVEL, now + (tier >= 3 ? 0.65 : 0.16), 0.12);
     }
     paperSlide(current);
-    if (tier === 0) { glassNote(current, 81, 0, 0.035, 0.13); return; }
+    if (tier === 0) { glassNote(current, pitch, 0, 0.07, 0.2); return; }
     if (tier === 1) {
-      glassNote(current, 84, 0, 0.065, 0.23);
-      glassNote(current, 91, 0.035, 0.032, 0.2);
+      glassNote(current, pitch, 0, 0.085, 0.28);
+      glassNote(current, pitch + 7, 0.035, 0.04, 0.24);
       return;
     }
     if (tier === 2) {

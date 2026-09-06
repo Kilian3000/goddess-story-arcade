@@ -66,6 +66,14 @@ test("desktop mix has an audible but headroom-safe default", () => {
   assert.ok(master * Math.max(sfx, music) <= 0.65, "bus gain leaves too little transient headroom");
 });
 
+test("each fresh card advances the pack melody with an immediate attack", () => {
+  const reveal = section("const playReveal = useCallback", "const playShrineDrop");
+  assert.match(reveal, /revealStep.current\+\+/);
+  assert.match(reveal, /glassNote\(current, pitch, 0,/);
+  const tear = section("const playTear = useCallback", "const playCardTravel");
+  assert.match(tear, /revealStep.current = 0/);
+});
+
 test("music is a varied 16-step arcade groove and starts immediately", () => {
   const bass = source.match(/const bassPattern[^=]*= \[([^\]]+)\]/)?.[1]
     .split(",")

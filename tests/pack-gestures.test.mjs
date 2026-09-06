@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { swipeIntent, cardDragTransform } from "../app/pack-gestures.ts";
+import { swipeIntent, cardDragTransform, gestureMode, peekAmount } from "../app/pack-gestures.ts";
 import { readFile } from "node:fs/promises";
 
 test("a slow swipe scales to the phone card width", () => {
@@ -31,20 +31,38 @@ test("the card follows horizontal movement without rotating the deck", () => {
   assert.equal(cardDragTransform(-500, -1000, 320), "translate3d(-500px,-24px,0) rotate(-7deg)");
 });
 
-test("gestures have no timed peek mode, cancel safely, and move only the top card", async () => {
+test("upward peek and sideways swipe lock to separate gestures", () => {
+  assert.equal(gestureMode(3, -9, "pending"), "pending");
+  assert.equal(gestureMode(3, -20, "pending"), "peek");
+  assert.equal(gestureMode(-20, 3, "pending"), "swipe");
+  assert.equal(gestureMode(-120, -30, "peek"), "peek");
+  assert.equal(gestureMode(-30, -120, "swipe"), "swipe");
+  assert.equal(gestureMode(20, 20, "pending"), "pending");
+  assert.equal(peekAmount(-55, 440), .5);
+  assert.equal(peekAmount(-150, 440), 1);
+  assert.equal(peekAmount(30, 440), 0);
+});
+
+test("a stationary input pad is separate from interruptible animated artwork", async () => {
   const source = await readFile(new URL("../app/pack-stack.tsx", import.meta.url), "utf8");
-  assert.match(source, /cancelled \? 0 : swipeIntent/);
+  assert.match(source, /cancelled \|\| current.mode !== "swipe" \? 0 : swipeIntent/);
   assert.doesNotMatch(source, /setTimeout|holdTimer|stack-turntable|stack-hidden-face|locked/);
-  assert.match(source, /current\.element\.style\.transform = cardDragTransform/);
-  assert.match(source, /outgoing\.animate/);
+  assert.match(source, /card\.style\.transform = cardDragTransform/);
+  assert.match(source, /animateCard\(previous,/);
+  assert.match(source, /animateCard\(activeIndex,/);
+  assert.match(source, /<button className="pack-touch-pad"/);
+  assert.match(source, /current.mode = gestureMode/);
+  assert.match(source, /!current.sounded/);
+  assert.match(source, /stack-peek-control/);
   assert.match(source, /<img src=\{card.image\}/);
   assert.match(source, /onContextMenu=\{event => event\.preventDefault\(\)\}/);
   assert.match(source, /draggable=\{false\}/);
   assert.match(source, /onLostPointerCapture/);
   assert.match(source, /running\.forEach\(animation => animation.cancel\(\)\)/);
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
-  assert.match(css, /\.pack-card\.is-next \{ z-index: 2; visibility: visible; \}/);
-  assert.doesNotMatch(css, /stack-turntable|tactile-stack.is-peeking/);
+  assert.match(css, /\.pack-card\.is-next \{ z-index: 1; visibility: visible; \}/);
+  assert.match(css, /\.pack-touch-pad[\s\S]*?transform: none;/);
+  assert.match(css, /pack-reveal-sheen/);
 });
 
 test("card navigation releases its input lock before scheduling visual cleanup", async () => {

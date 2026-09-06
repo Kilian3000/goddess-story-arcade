@@ -1,3 +1,17 @@
+export type GestureMode = "pending" | "peek" | "swipe";
+
+export function gestureMode(dx: number, dy: number, current: GestureMode): GestureMode {
+  if (current !== "pending") return current;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < 10) return "pending";
+  if (Math.abs(dy) > Math.abs(dx) * 1.15) return "peek";
+  if (Math.abs(dx) > Math.abs(dy) * 1.15) return "swipe";
+  return "pending";
+}
+
+export function peekAmount(dy: number, height: number): number {
+  return Math.max(0, Math.min(1, -dy / Math.max(80, height * .25)));
+}
+
 // Distance scales with the card; a deliberate short flick also counts.
 export function swipeIntent(dx: number, dy: number, elapsed: number, width: number, releaseVelocity?: number): -1 | 0 | 1 {
   const distance = Math.abs(dx);

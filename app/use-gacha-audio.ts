@@ -134,6 +134,18 @@ function cardSlap(rig: AudioRig, delay = 0, strength = 0.28) {
   tone(rig, 132, delay, 0.055, strength * 0.34, "sine", 82);
 }
 
+// Opening packs uses a light paper transient, distinct from the game-table slap.
+function paperSlide(rig: AudioRig) {
+  noiseBurst(rig, 0, 0.085, 2800, 900, 0.17, "bandpass");
+  noiseBurst(rig, 0, 0.025, 6500, 3200, 0.055, "highpass");
+  tone(rig, 190, 0, 0.04, 0.028, "sine", 110);
+}
+
+function glassNote(rig: AudioRig, midi: number, delay: number, strength: number, duration = 0.35) {
+  tone(rig, note(midi), delay, duration, strength, "sine");
+  tone(rig, note(midi) * 2.76, delay, duration * 0.36, strength * 0.15, "sine");
+}
+
 function musicTone(
   rig: AudioRig,
   midi: number,
@@ -290,7 +302,10 @@ export function useGachaAudio() {
     musicTimer.current = null;
     musicNextStepAt.current = 0;
     const current = rig.current;
-    if (current) current.music.gain.setTargetAtTime(0, current.context.currentTime, 0.08);
+    if (current) {
+      current.music.gain.cancelScheduledValues(current.context.currentTime);
+      current.music.gain.setTargetAtTime(0, current.context.currentTime, 0.08);
+    }
   }, []);
 
   const beginMusic = useCallback((): Promise<void> => {
@@ -399,45 +414,52 @@ export function useGachaAudio() {
   const playFoil = useCallback((progress = 0.25) => {
     void beginMusic();
     return trigger((current) => {
-      noiseBurst(current, 0, 0.1, 900 + progress * 1600, 5600, 0.22, "highpass");
-      tone(current, 320 + progress * 80, 0.01, 0.045, 0.045, "square");
+      noiseBurst(current, 0, 0.055, 1800 + progress * 1500, 6500, 0.13, "highpass");
+      noiseBurst(current, 0.012, 0.035, 1100, 2800, 0.075, "bandpass");
     });
   }, [beginMusic, trigger]);
 
   const playTear = useCallback(() => trigger((current) => {
-      noiseBurst(current, 0, 0.42, 650, 7600, 0.65, "bandpass");
-      noiseBurst(current, 0.13, 0.24, 7200, 1100, 0.23, "highpass");
-      tone(current, 118, 0.2, 0.18, 0.34, "sine", 48);
-      cardSlap(current, 0.39, 0.34);
+      noiseBurst(current, 0, 0.22, 1700, 7400, 0.32, "bandpass");
+      [0.018, 0.044, 0.075].forEach(delay => noiseBurst(current, delay, 0.03, 6800, 1900, 0.14, "highpass"));
+      noiseBurst(current, 0.16, 0.2, 4800, 850, 0.12, "highpass");
+      glassNote(current, 84, 0.04, 0.035, 0.22);
     }), [trigger]);
 
   const playCardTravel = useCallback(() => trigger((current) => {
-      noiseBurst(current, 0, 0.13, 850, 4300, 0.18, "highpass");
-      cardSlap(current, 0, 0.25);
+      paperSlide(current);
     }), [trigger]);
+
+  const playPeek = useCallback(() => trigger((current) => {
+    noiseBurst(current, 0, 0.075, 3500, 1600, 0.045, "highpass");
+    glassNote(current, 88, 0, 0.025, 0.16);
+  }), [trigger]);
 
   const playReveal = useCallback((rarity: string) => trigger((current) => {
     const tier = rarityTier(rarity);
-    cardSlap(current, 0, tier >= 3 ? 0.45 : 0.29);
-    if (tier === 0) return;
+    const now = current.context.currentTime;
+    if (musicEnabledRef.current) {
+      current.music.gain.cancelScheduledValues(now);
+      current.music.gain.setTargetAtTime(MUSIC_LEVEL * (tier >= 3 ? 0.38 : 0.65), now, 0.012);
+      current.music.gain.setTargetAtTime(MUSIC_LEVEL, now + (tier >= 3 ? 0.65 : 0.16), 0.12);
+    }
+    paperSlide(current);
+    if (tier === 0) { glassNote(current, 81, 0, 0.035, 0.13); return; }
     if (tier === 1) {
-      tone(current, note(72), 0, 0.22, 0.12, "sine");
-      tone(current, note(79), 0.07, 0.18, 0.07, "triangle");
+      glassNote(current, 84, 0, 0.065, 0.23);
+      glassNote(current, 91, 0.035, 0.032, 0.2);
       return;
     }
     if (tier === 2) {
-      [74, 81, 86].forEach((value, index) => tone(current, note(value), index * 0.075, 0.35, 0.14 - index * 0.025, "sine"));
-      noiseBurst(current, 0.13, 0.32, 7600, 2500, 0.1, "highpass");
+      [81, 88, 93].forEach((value, index) => glassNote(current, value, index * 0.04, 0.08 - index * 0.015));
       return;
     }
 
-    tone(current, tier >= 4 ? 74 : 86, 0, 0.3, 0.42, "sine", 43);
-    noiseBurst(current, 0.04, tier >= 4 ? 0.85 : 0.58, 380, 8200, tier >= 4 ? 0.44 : 0.32, "bandpass");
-    const chord = tier >= 4 ? [60, 64, 67, 72, 79] : [62, 67, 71, 74];
-    chord.forEach((value, index) => tone(current, note(value), index * 0.075, 0.58 + index * 0.08, tier >= 4 ? 0.2 : 0.15, index % 2 ? "triangle" : "sine"));
+    noiseBurst(current, 0, 0.32, 5600, 1800, 0.12, "highpass");
+    const chord = tier >= 4 ? [72, 76, 79, 84, 91] : [74, 79, 83, 86];
+    chord.forEach((value, index) => glassNote(current, value, index * 0.045, tier >= 4 ? 0.11 : 0.085, 0.55));
     if (tier >= 4) {
-      noiseBurst(current, 0.46, 0.7, 9200, 1800, 0.2, "highpass");
-      tone(current, note(84), 0.57, 0.62, 0.16, "sine");
+      glassNote(current, 96, 0.24, 0.055, 0.65);
     }
   }), [trigger]);
 
@@ -505,6 +527,7 @@ export function useGachaAudio() {
     playFoil,
     playTear,
     playCardTravel,
+    playPeek,
     playReveal,
     playShrineDrop,
     playShrineBounce,

@@ -42,6 +42,19 @@ test("effects schedule synchronously before Safari resume settles", () => {
   assert.equal(source.includes("createDynamicsCompressor"), false);
 });
 
+test("pack sounds use immediate paper transients and keep peek separate", () => {
+  const reveal = section("const playReveal = useCallback", "const playShrineDrop");
+  assert.match(reveal, /paperSlide\(current\)/);
+  assert.doesNotMatch(reveal, /cardSlap|await /);
+  assert.match(reveal, /music\.gain\.cancelScheduledValues\(now\)/);
+  assert.match(reveal, /musicEnabledRef\.current/);
+  const peek = section("const playPeek = useCallback", "const playReveal");
+  assert.match(peek, /glassNote\(current, 88, 0,/);
+  assert.doesNotMatch(peek, /playReveal|cardSlap/);
+  const stop = section("const stopMusic = useCallback", "const beginMusic");
+  assert.match(stop, /cancelScheduledValues/);
+});
+
 test("desktop mix has an audible but headroom-safe default", () => {
   const master = numberConstant("MASTER_LEVEL");
   const sfx = numberConstant("SFX_LEVEL");

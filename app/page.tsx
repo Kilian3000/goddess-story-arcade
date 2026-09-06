@@ -16,7 +16,8 @@ import {
   type PackRecipe,
 } from "./gacha-engine";
 import { arcadeConfig, cardAsset } from "./arcade-config";
-import { packHaptic, swipeIntent } from "./pack-gestures";
+import { packHaptic } from "./pack-gestures";
+import { PackStack } from "./pack-stack";
 import { LuckyShrine, type WaifuMuse } from "./lucky-shrine";
 import { TemptationDuel } from "./temptation-duel";
 import { useGachaAudio } from "./use-gacha-audio";
@@ -91,7 +92,6 @@ const rarityColors: Record<string, string> = {
 
 function cardImage(card: Card) { return cardAsset(card.image_path); }
 function rarityColor(rarity: string) { return rarityColors[rarity] || "#b18aff"; }
-function rarityClass(rarity: string) { return rarity.toLowerCase().replace(/[^a-z0-9]+/g, "-"); }
 function groupClass(group?: string) {
   if (group === "1 юань") return "tier-one";
   if (group === "2 юаня") return "tier-two";
@@ -179,11 +179,8 @@ export default function Home() {
   const tearStart = useRef<number | null>(null);
   const dragged = useRef(false);
   const suppressClick = useRef(false);
-  const swipeStart = useRef<number | null>(null);
-  const swipeOrigin = useRef({ y: 0, time: 0, width: 300 });
   const tearTick = useRef(0);
   const inputLock = useRef(false);
-  const didSwipe = useRef(false);
   const revealedRef = useRef(-1);
   const navigationTimer = useRef<number | null>(null);
   const {
@@ -195,6 +192,7 @@ export default function Home() {
     playFoil,
     playTear,
     playCardTravel,
+    playPeek,
     playReveal,
     playShrineDrop,
     playShrineBounce,
@@ -619,35 +617,7 @@ export default function Home() {
               <div className="reveal-halo" />
               {activeIndex === freshIndex && <div key={`${active.id}-${hitNonce}`} className={`reveal-burst burst-tier-${rarityTier(active.rarity)}`} aria-hidden="true"><i /><i /><i /><i /><strong>{active.rarity}</strong><b>{rarityTier(active.rarity) >= 4 ? "GODDESS HIT!" : rarityTier(active.rarity) >= 3 ? "JACKPOT PULL!" : rarityTier(active.rarity) >= 2 ? "SHINY!" : ""}<small>{rarityTier(active.rarity) >= 2 ? active.character : ""}</small></b></div>}
               <div className="reveal-index"><b>{String(activeIndex + 1).padStart(2, "0")}</b><span>/ {String(pack.length).padStart(2, "0")}</span><i>CARD</i></div>
-              <div className="card-deck">
-                {pack.map((card, index) => {
-                  const delta = index - activeIndex;
-                  if (Math.abs(delta) > 1) return null;
-                  const current = delta === 0;
-                  const visible = index <= revealedThrough;
-                  return (
-                    <button
-                      key={`${card.id}-${index}`}
-                      className={`card-plane ${current ? "is-current" : delta < 0 ? "is-before" : "is-after"} rarity-${rarityClass(card.rarity)}`}
-                      tabIndex={current ? 0 : -1}
-                      aria-hidden={!current}
-                      onDragStart={(event) => event.preventDefault()}
-                      aria-label={current ? `${card.rarity} ${card.character}: Details anzeigen` : undefined}
-                      onClick={() => { if (!current) return; if (didSwipe.current) { didSwipe.current = false; return; } setInspectorOpen(true); }}
-                      onPointerDown={(event) => { if (!current || !event.isPrimary || event.button !== 0 || inputLock.current) return; didSwipe.current = false; swipeStart.current = event.clientX; swipeOrigin.current = { y: event.clientY, time: event.timeStamp, width: event.currentTarget.offsetWidth }; event.currentTarget.setPointerCapture(event.pointerId); event.currentTarget.classList.add("is-dragging"); }}
-                      onPointerUp={(event) => { if (!current || swipeStart.current === null) return; const dx = event.clientX - swipeStart.current; const dy = event.clientY - swipeOrigin.current.y; const intent = swipeIntent(dx, dy, event.timeStamp - swipeOrigin.current.time, swipeOrigin.current.width); swipeStart.current = null; didSwipe.current = Math.abs(dx) > 8 || Math.abs(dy) > 8; event.currentTarget.classList.remove("is-dragging"); try { event.currentTarget.releasePointerCapture(event.pointerId); } catch { /* already released */ } if (intent) { event.preventDefault(); if (intent === 1) nextCard(); else previousCard(); } event.currentTarget.style.removeProperty("--drag-x"); event.currentTarget.style.removeProperty("--drag-rot"); }}
-                      onPointerCancel={(event) => { swipeStart.current = null; didSwipe.current = true; event.currentTarget.classList.remove("is-dragging"); event.currentTarget.style.removeProperty("--drag-x"); event.currentTarget.style.removeProperty("--drag-rot"); }}
-                      onPointerMove={(event) => { if (!current) return; const rect = event.currentTarget.getBoundingClientRect(); event.currentTarget.style.setProperty("--mx", `${(event.clientX - rect.left) / rect.width * 100}%`); event.currentTarget.style.setProperty("--my", `${(event.clientY - rect.top) / rect.height * 100}%`); if (swipeStart.current !== null) { const dragX = Math.max(-150, Math.min(150, event.clientX - swipeStart.current)); event.currentTarget.style.setProperty("--drag-x", `${dragX}px`); event.currentTarget.style.setProperty("--drag-rot", `${dragX / 32}deg`); } }}
-                    >
-                      <span className="card-body">
-                        {visible ? <img src={cardImage(card)} draggable={false} alt={current ? `${card.rarity}-${card.number} ${card.character}` : ""} /> : <span className="digital-card-back"><PackSigil /><b>GODDESS STORY</b><i>{String(index + 1).padStart(2, "0")}</i></span>}
-                        {current && rarityTier(card.rarity) >= 2 && <span className="card-holo" />}
-                        {current && rarityTier(card.rarity) >= 3 && <span className="card-spark"><i /><i /><i /></span>}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+              <PackStack cards={pack.map(card => ({ id: card.id, image: cardImage(card), character: card.character, rarity: card.rarity, color: rarityColor(card.rarity) }))} activeIndex={activeIndex} locked={transitioning} onNext={nextCard} onPrevious={previousCard} onInspect={() => setInspectorOpen(true)} onPeek={() => { void playPeek(); }} />
               <button className="nav-orb nav-previous" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); previousCard(); } }} onClick={(event) => { if (event.detail === 0) previousCard(); }} disabled={activeIndex === 0 || transitioning} aria-label="Vorherige Karte">←</button>
               <button className="nav-orb nav-next" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); nextCard(); } }} onClick={(event) => { if (event.detail === 0) nextCard(); }} disabled={transitioning} aria-label={activeIndex === pack.length - 1 ? "Pack ansehen" : "Nächste Karte"}>→</button>
               <div className="pull-caption" aria-live="polite" aria-atomic="true"><b style={{ color: rarityColor(active.rarity) }}>{active.rarity}</b><span><strong>{active.character || "Unknown character"}</strong><small>{active.title}</small></span></div>

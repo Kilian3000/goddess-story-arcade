@@ -5055,3 +5055,118 @@ body {
   .temptation-track { min-height: 105px; }
   .temptation-window { height: 64px; }
 }
+
+/* A wrapper with two matching faces: the torn top is part of the artwork. */
+.mode-altar .pack-wrapper,
+.mode-altar .pack-wrapper:hover:not(:disabled) {
+  border: 0; background: transparent; clip-path: none; box-shadow: none;
+  touch-action: none; -webkit-user-select: none; user-select: none;
+}
+.pack-wrapper::before, .pack-wrapper::after { display: none; }
+.pack-face {
+  position: absolute; inset: 0; display: block; overflow: hidden;
+  border: 4px solid var(--ui-ink); background: var(--ui-purple);
+  pointer-events: none; transition: transform 150ms ease-out;
+}
+.pack-face::after {
+  content: ""; position: absolute; z-index: 5; inset: 0;
+  background: repeating-linear-gradient(90deg, #fff4 0 1px, #0003 1px 3px, transparent 3px 5px);
+  clip-path: polygon(0 0,100% 0,100% 5%,0 5%,0 95%,100% 95%,100% 100%,0 100%);
+}
+.pack-face-body {
+  z-index: 18;
+  clip-path: polygon(0 16%,8% 15%,16% 16.5%,24% 15%,32% 16%,40% 15%,48% 16.5%,56% 15%,64% 16%,72% 15%,80% 16.5%,88% 15%,100% 16%,100% 100%,0 100%);
+  transform: translateY(calc(var(--tear) * 7px));
+}
+.pack-face-top {
+  z-index: 19; transform-origin: 100% 16%;
+  clip-path: polygon(0 0,100% 0,100% 16%,88% 15%,80% 16.5%,72% 15%,64% 16%,56% 15%,48% 16.5%,40% 15%,32% 16%,24% 15%,16% 16.5%,8% 15%,0 16%);
+  transform: translate(calc(var(--tear) * 24px),calc(var(--tear) * -32px)) rotate(calc(var(--tear) * 7deg));
+}
+.pack-face .pack-copy { top: 20%; }
+.mode-altar .tear-handle { z-index: 22; top: 5%; height: 11%; animation: none; opacity: calc(1 - var(--tear)); }
+.mode-altar .tear-handle b { font-size: 12px; letter-spacing: .06em; }
+.mode-altar .pack-edition { font-size: 12px; }
+.mode-altar .is-opening .pack-face-top { animation: foil-top-away 520ms cubic-bezier(.2,.7,.25,1) both; }
+.mode-altar .is-opening .pack-face-body { animation: foil-body-away 620ms cubic-bezier(.25,.6,.3,1) both; }
+.mode-altar .is-opening .pack-card-stack { animation: pack-stack-emerge 500ms both; }
+.mode-altar .gesture-hint { font-size: 14px; }
+@keyframes foil-top-away {
+  from { transform: translate(24px,-32px) rotate(7deg); }
+  to { transform: translate(85%,-60%) rotate(30deg); opacity: 0; }
+}
+@keyframes foil-body-away {
+  from { transform: translateY(7px); }
+  to { transform: translate(4%,100%) rotate(-8deg); opacity: 0; }
+}
+
+/* The next card is already underneath; avoid a second slam or opaque shutter. */
+.mode-altar .card-plane { touch-action: none; box-shadow: 3px 5px 12px #09050d88; transition: transform 200ms cubic-bezier(.2,.8,.25,1), opacity 180ms ease; }
+.mode-altar .card-plane.is-current .card-body { animation: none; }
+.mode-altar .card-plane.is-current .card-body::after { display: none; }
+.mode-altar .card-deck { animation: none; }
+.mode-altar .card-plane.is-after { transform: translate(8px,5px) rotate(1deg) scale(.98); filter: none; opacity: 1; }
+.mode-altar .direction--1 .card-plane.is-after { transform: translateX(120%) rotate(10deg); opacity: 0; }
+.mode-altar .reveal-burst { pointer-events: none; }
+.pull-caption { position: absolute; z-index: 7; left: 7%; top: 38%; max-width: 20%; display: flex; align-items: center; gap: 12px; pointer-events: none; }
+.pull-caption > b { font: italic 900 36px/1 Impact,sans-serif; }
+.pull-caption span { display: grid; gap: 6px; min-width: 0; }
+.pull-caption strong { font-size: 20px; line-height: 1.15; }
+.pull-caption small { color: #cbbbd3; font-size: 14px; }
+.pull-trail { position: absolute; z-index: 9; right: 7%; top: 35%; display: grid; grid-template-columns: repeat(2,44px); gap: 8px; }
+.pull-trail button { min-width: 36px; height: 44px; padding: 4px; border: 1px solid #755181; border-radius: 5px; background: #1c102b; color: var(--pull-color); font: 900 12px/1 monospace; }
+.pull-trail i { display: block; height: 3px; margin-bottom: 7px; background: currentColor; border-radius: 2px; }
+.pull-trail button[aria-current] { border-color: var(--ui-cream); box-shadow: 0 0 0 2px #fff2; }
+.pull-trail button:disabled { opacity: .6; }
+.next-action > span { display: flex; align-items: center; gap: 16px; }
+.next-action small { font: 700 14px/1 monospace; opacity: .75; }
+.pull-confetti { position: absolute; z-index: 8; left: 50%; top: 45%; pointer-events: none; }
+.pull-confetti i { position: absolute; width: 7px; height: 13px; background: var(--ui-yellow); animation: pull-spark 650ms var(--delay) ease-out both; }
+.pull-confetti i:nth-child(2n) { background: var(--ui-pink); }
+@keyframes pull-spark { from { transform: rotate(var(--angle)) translateY(75px) scale(0); opacity: 1; } to { transform: rotate(var(--angle)) translateY(calc(var(--flight) + 130px)) rotate(160deg); opacity: 0; } }
+
+@media (max-width: 700px) {
+  .mode-altar.gacha-stage { height: 100svh; min-height: 0; }
+  .mode-altar .experience { padding: 66px 12px 160px; }
+  .mode-altar .card-deck { width: min(82vw, calc((100svh - 330px) * .728)); height: auto; max-width: none; min-width: 0; margin-top: -110px; }
+  .mode-altar .pack-wrapper { width: min(70vw, calc((100svh - 295px) * .667)); min-width: 0; }
+  .mode-altar .pack-presentation { width: 100%; }
+  .mode-altar .pack-side { display: none; }
+  .mode-altar .pack-series { font-size: clamp(25px,7vw,36px); }
+  .mode-altar .pack-cover-tag { font-size: 10px; }
+  .mode-altar .pack-code { font-size: 30px; }
+  .mode-altar .pack-subtitle { font-size: 10px; }
+  .mode-altar .action-dock { left: 18px; right: 18px; bottom: max(14px,env(safe-area-inset-bottom)); translate: none; transform: none; }
+  .mode-altar .primary-action { width: 100%; height: 54px; min-width: 0; justify-content: space-between; padding: 8px 12px 8px 18px; }
+  .mode-altar .primary-action span { font-size: 14px; letter-spacing: .04em; }
+  .mode-altar .primary-action i { width: 36px; height: 36px; }
+  .mode-altar .set-anchor { left: 20px; bottom: calc(78px + env(safe-area-inset-bottom)); }
+  .mode-altar .set-anchor button b { font-size: 18px; }
+  .mode-altar .set-anchor button > span { font-size: 12px; }
+  .mode-altar .gesture-hint { top: calc(100% + 8px); padding: 5px 8px; font-size: 12px; }
+  .mode-altar.phase-sealed .set-anchor, .mode-altar.phase-opening .set-anchor { left: 20px; bottom: calc(76px + env(safe-area-inset-bottom)); }
+  .mode-altar .reveal-index { display: none; }
+  .mode-altar.phase-revealing .set-anchor, .mode-altar.phase-summary .set-anchor { display: none; }
+  .mode-altar .pull-caption { top: auto; bottom: calc(135px + env(safe-area-inset-bottom)); left: 9%; right: 9%; max-width: none; justify-content: center; text-align: left; }
+  .mode-altar .pull-caption > b { font-size: 28px; }
+  .mode-altar .pull-caption strong { font-size: 18px; }
+  .mode-altar .pull-caption small { font-size: 14px; max-width: 65vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mode-altar .pull-trail { top: auto; bottom: calc(78px + env(safe-area-inset-bottom)); left: 16px; right: 16px; display: flex; justify-content: center; gap: 5px; }
+  .mode-altar .pull-trail button { flex: 0 1 44px; min-width: 24px; height: 44px; font-size: 11px; }
+  .mode-altar .reveal-index { top: 75px; left: 18px; }
+  .mode-altar .reveal-index b { font-size: 22px; }
+  .mode-altar .reveal-index i { display: none; }
+  .mode-altar .nav-orb { width: 44px; height: 44px; top: 43%; opacity: .75; }
+  .mode-altar .nav-previous { left: 2px; }.mode-altar .nav-next { right: 2px; }
+  .mode-altar .summary-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+  .mode-altar .pack-summary { max-height: 100%; padding-bottom: 8px; }
+  .mode-altar .summary-heading p { font-size: 14px; }
+  .mode-altar .experience-switch button > b { font-size: 14px; }
+  .mode-altar .experience-switch button > small { display: none; }
+  .mode-altar .experience-switch button { min-height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mode-altar .pack-face, .mode-altar .card-plane { transition-duration: 0s; }
+  .mode-altar .is-opening .pack-face { animation-duration: 1ms; }
+  .pull-confetti, .mode-altar .reveal-burst, .mode-altar .card-spark { display: none; }
+}

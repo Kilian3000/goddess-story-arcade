@@ -16,6 +16,7 @@ import {
   type PackRecipe,
 } from "./gacha-engine";
 import { arcadeConfig, cardAsset } from "./arcade-config";
+import { packHaptic, swipeIntent } from "./pack-gestures";
 import { LuckyShrine, type WaifuMuse } from "./lucky-shrine";
 import { TemptationDuel } from "./temptation-duel";
 import { useGachaAudio } from "./use-gacha-audio";
@@ -179,6 +180,9 @@ export default function Home() {
   const dragged = useRef(false);
   const suppressClick = useRef(false);
   const swipeStart = useRef<number | null>(null);
+  const swipeOrigin = useRef({ y: 0, time: 0, width: 300 });
+  const tearTick = useRef(0);
+  const inputLock = useRef(false);
   const didSwipe = useRef(false);
   const revealedRef = useRef(-1);
   const navigationTimer = useRef<number | null>(null);
@@ -267,6 +271,7 @@ export default function Home() {
       revealedRef.current = -1;
       setDirection(1);
       setTransitioning(false);
+      inputLock.current = false;
       setPhase("sealed");
       setInspectorOpen(false);
       setTearProgress(0);
@@ -298,18 +303,20 @@ export default function Home() {
   }, [allCards, catalog, selectedPack]);
 
   const navigateCard = useCallback((index: number) => {
-    if (!pack[index] || transitioning || index === activeIndex) return;
+    if (!pack[index] || inputLock.current || index === activeIndex) return;
     const nextDirection: 1 | -1 = index > activeIndex ? 1 : -1;
     const fresh = index > revealedRef.current;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const tier = rarityTier(pack[index].rarity);
-    const travelTime = reducedMotion ? 20 : tier >= 4 && fresh ? 720 : tier >= 3 && fresh ? 560 : 390;
+    const travelTime = reducedMotion ? 0 : 200;
+    inputLock.current = true;
 
     if (fresh) {
       revealedRef.current = index;
     }
     if (fresh) void playReveal(pack[index].rarity);
     else void playCardTravel();
+    packHaptic(fresh ? tier : 0);
     flushSync(() => {
       setDirection(nextDirection);
       setTransitioning(true);
@@ -326,12 +333,13 @@ export default function Home() {
     if (navigationTimer.current !== null) window.clearTimeout(navigationTimer.current);
     navigationTimer.current = window.setTimeout(() => {
       setTransitioning(false);
+      inputLock.current = false;
       navigationTimer.current = null;
     }, travelTime);
-  }, [activeIndex, pack, playCardTravel, playReveal, transitioning]);
+  }, [activeIndex, pack, playCardTravel, playReveal]);
 
   const nextCard = useCallback(() => {
-    if (transitioning) return;
+    if (inputLock.current) return;
     if (activeIndex >= pack.length - 1) {
       const highest = pack.reduce((value, card) => Math.max(value, rarityTier(card.rarity)), 0);
       void playSummary(highest);
@@ -340,7 +348,7 @@ export default function Home() {
       return;
     }
     navigateCard(activeIndex + 1);
-  }, [activeIndex, navigateCard, pack, playSummary, transitioning]);
+  }, [activeIndex, navigateCard, pack, playSummary]);
 
   const previousCard = useCallback(() => {
     if (activeIndex > 0) navigateCard(activeIndex - 1);
@@ -363,7 +371,7 @@ export default function Home() {
   }, [inspectorOpen, nextCard, phase, previousCard, showInfo, showMenu]);
 
   const openPack = useCallback(async () => {
-    if (!selectedPack || !recipe || !collation || !dataReady || phase !== "sealed" || mode !== "altar") return;
+    if (!selectedPack || !recipe || !collation || !dataReady || phase !== "sealed" || mode !== "altar" || inputLock.current) return;
     void startMusic();
     setGenerationError("");
     const token = ++sequence.current;
@@ -384,7 +392,9 @@ export default function Home() {
     }
 
     const nextOpened = opened + 1;
+    inputLock.current = true;
     void playTear();
+    packHaptic(3);
     setPack(result);
     setActiveIndex(0);
     setRevealedThrough(-1);
@@ -401,11 +411,15 @@ export default function Home() {
     window.localStorage.setItem(openedKey(selectedPack.setName), String(nextOpened));
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    void preloadCards(result);
-    await new Promise((resolve) => window.setTimeout(resolve, reducedMotion ? 30 : 1100));
+    await Promise.all([
+      preloadCards(result),
+      new Promise((resolve) => window.setTimeout(resolve, reducedMotion ? 30 : 650)),
+    ]);
     if (sequence.current !== token) return;
+    inputLock.current = false;
     revealedRef.current = 0;
     void playReveal(result[0].rarity);
+    packHaptic(rarityTier(result[0].rarity));
     flushSync(() => {
       setPhase("revealing");
       setRevealedThrough(0);
@@ -415,22 +429,26 @@ export default function Home() {
   }, [collation, dataReady, getPool, mode, opened, phase, playReveal, playTear, recipe, selectedPack, startMusic]);
 
   const onPackPointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    if (!(event.target as HTMLElement).closest(".tear-handle")) return;
+    if (!event.isPrimary || event.button !== 0 || !dataReady || phase !== "sealed") return;
     tearStart.current = event.clientX;
+    tearTick.current = 0;
     dragged.current = false;
     event.currentTarget.setPointerCapture(event.pointerId);
     void playFoil();
   };
   const onPackPointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
     if (tearStart.current === null) return;
-    const distance = Math.max(0, event.clientX - tearStart.current);
+    const distance = Math.abs(event.clientX - tearStart.current);
     if (distance > 6) dragged.current = true;
-    setTearProgress(Math.min(1, distance / 150));
+    const progress = Math.min(1, distance / (event.currentTarget.offsetWidth * .55));
+    setTearProgress(progress);
+    const tick = Math.floor(progress * 4);
+    if (tick > tearTick.current) { tearTick.current = tick; void playFoil(progress); packHaptic(); }
   };
   const onPackPointerUp = (event: ReactPointerEvent<HTMLButtonElement>) => {
     if (tearStart.current === null) return;
-    const finalProgress = Math.min(1, Math.max(0, event.clientX - tearStart.current) / 150);
-    const shouldOpen = dragged.current && finalProgress >= 0.58;
+    const finalProgress = Math.min(1, Math.abs(event.clientX - tearStart.current) / (event.currentTarget.offsetWidth * .55));
+    const shouldOpen = dragged.current && finalProgress >= 0.65;
     suppressClick.current = dragged.current;
     tearStart.current = null;
     try { event.currentTarget.releasePointerCapture(event.pointerId); } catch { /* capture may already be gone */ }
@@ -442,6 +460,7 @@ export default function Home() {
   };
 
   const resetForAnother = () => {
+    inputLock.current = false;
     sequence.current += 1;
     if (navigationTimer.current !== null) window.clearTimeout(navigationTimer.current);
     setPack([]);
@@ -574,25 +593,23 @@ export default function Home() {
               </aside>
               <button className={`pack-wrapper ${phase === "opening" ? "is-opening" : ""}`} style={{ "--tear": tearProgress, "--pack-art": `url(${packMuse.image})` } as CSSProperties} onClick={onPackClick} onPointerDown={onPackPointerDown} onPointerMove={onPackPointerMove} onPointerUp={onPackPointerUp} onPointerCancel={() => { tearStart.current = null; setTearProgress(0); }} disabled={!dataReady || phase === "opening"} aria-label={`${selectedPack.setName} Booster öffnen`}>
                 <span className="pack-card-stack" aria-hidden="true"><i /><i /><b>GS</b></span>
-                <img className="foil-texture" src="/booster-foil.webp" alt="" />
-                <img className="pack-hero-art" src={packMuse.image} alt="" />
+                {(["body", "top"] as const).map((part) => <span key={part} className={`pack-face pack-face-${part}`} aria-hidden="true">
+                <img className="pack-hero-art" src={packMuse.image} alt="" draggable={false} />
                 <span className="foil-color" /><span className="foil-shimmer" />
-                <span className="pack-rip-seam" aria-hidden="true" />
-                <span className="pack-rip-piece pack-rip-piece-left" aria-hidden="true"><i /></span>
-                <span className="pack-rip-piece pack-rip-piece-right" aria-hidden="true"><i /></span>
                 <span className="pack-copy"><span className="pack-series">GODDESS</span><span className="pack-series pack-series-outline">STORY</span><span className="pack-subtitle">VIRTUAL BOOSTER</span></span>
                 <PackSigil />
                 <span className="pack-cover-tag">COVER GIRL · {packMuse.character}</span>
                 <span className="pack-code">{selectedPack.setName}</span>
                 <span className="pack-edition">{selectedPack.cost} YUAN · {selectedPack.odds.cardsPerPack} CARDS</span>
-                <span className="tear-handle"><i /><b>SLIDE TO RIP</b></span>
+                </span>)}
+                <span className="tear-handle"><i /><b>SLIDE TO RIP →</b></span>
               </button>
               <aside className="pack-side pack-side-right" aria-label="Selected booster profile">
                 <img src={rivalMuse.image} alt="" />
                 <div className="pack-profile-copy"><small>BOOSTER PROFILE</small><b>{selectedPack.setName}</b><strong>{selectedPack.odds.cardsPerPack}<i>CARDS</i></strong><p>{recipe?.pattern || `${selectedPack.cost} Yuan pack`}</p><em>FEAT. {rivalMuse.character}</em></div>
               </aside>
-              <p className="gesture-hint">Swipe the tab <span>or tap to rip</span></p>
-              {phase === "opening" && <p className="opening-copy"><span>✦</span> FOIL RIPPED — CARDS LOADING</p>}
+              <p className="gesture-hint">Tear across the top <span>or tap to open</span></p>
+              {phase === "opening" && <p className="opening-copy"><span>✦</span> HERE WE GO</p>}
             </div>
           )}
 
@@ -614,16 +631,16 @@ export default function Home() {
                       className={`card-plane ${current ? "is-current" : delta < 0 ? "is-before" : "is-after"} rarity-${rarityClass(card.rarity)}`}
                       tabIndex={current ? 0 : -1}
                       aria-hidden={!current}
+                      onDragStart={(event) => event.preventDefault()}
                       aria-label={current ? `${card.rarity} ${card.character}: Details anzeigen` : undefined}
                       onClick={() => { if (!current) return; if (didSwipe.current) { didSwipe.current = false; return; } setInspectorOpen(true); }}
-                      onPointerDown={(event) => { if (!current) return; didSwipe.current = false; swipeStart.current = event.clientX; event.currentTarget.setPointerCapture(event.pointerId); event.currentTarget.classList.add("is-dragging"); }}
-                      onPointerUp={(event) => { if (!current || swipeStart.current === null) return; const deltaX = event.clientX - swipeStart.current; swipeStart.current = null; event.currentTarget.classList.remove("is-dragging"); event.currentTarget.style.removeProperty("--drag-x"); event.currentTarget.style.removeProperty("--drag-rot"); try { event.currentTarget.releasePointerCapture(event.pointerId); } catch { /* already released */ } if (Math.abs(deltaX) > 72) { didSwipe.current = true; event.preventDefault(); if (deltaX < 0) nextCard(); else previousCard(); } }}
-                      onPointerCancel={(event) => { swipeStart.current = null; event.currentTarget.classList.remove("is-dragging"); event.currentTarget.style.removeProperty("--drag-x"); event.currentTarget.style.removeProperty("--drag-rot"); }}
+                      onPointerDown={(event) => { if (!current || !event.isPrimary || event.button !== 0 || inputLock.current) return; didSwipe.current = false; swipeStart.current = event.clientX; swipeOrigin.current = { y: event.clientY, time: event.timeStamp, width: event.currentTarget.offsetWidth }; event.currentTarget.setPointerCapture(event.pointerId); event.currentTarget.classList.add("is-dragging"); }}
+                      onPointerUp={(event) => { if (!current || swipeStart.current === null) return; const dx = event.clientX - swipeStart.current; const dy = event.clientY - swipeOrigin.current.y; const intent = swipeIntent(dx, dy, event.timeStamp - swipeOrigin.current.time, swipeOrigin.current.width); swipeStart.current = null; didSwipe.current = Math.abs(dx) > 8 || Math.abs(dy) > 8; event.currentTarget.classList.remove("is-dragging"); try { event.currentTarget.releasePointerCapture(event.pointerId); } catch { /* already released */ } if (intent) { event.preventDefault(); if (intent === 1) nextCard(); else previousCard(); } event.currentTarget.style.removeProperty("--drag-x"); event.currentTarget.style.removeProperty("--drag-rot"); }}
+                      onPointerCancel={(event) => { swipeStart.current = null; didSwipe.current = true; event.currentTarget.classList.remove("is-dragging"); event.currentTarget.style.removeProperty("--drag-x"); event.currentTarget.style.removeProperty("--drag-rot"); }}
                       onPointerMove={(event) => { if (!current) return; const rect = event.currentTarget.getBoundingClientRect(); event.currentTarget.style.setProperty("--mx", `${(event.clientX - rect.left) / rect.width * 100}%`); event.currentTarget.style.setProperty("--my", `${(event.clientY - rect.top) / rect.height * 100}%`); if (swipeStart.current !== null) { const dragX = Math.max(-150, Math.min(150, event.clientX - swipeStart.current)); event.currentTarget.style.setProperty("--drag-x", `${dragX}px`); event.currentTarget.style.setProperty("--drag-rot", `${dragX / 32}deg`); } }}
-                      onTransitionEnd={(event) => { if (current && transitioning && event.propertyName === "transform") setTransitioning(false); }}
                     >
                       <span className="card-body">
-                        {visible ? <img src={cardImage(card)} alt={current ? `${card.rarity}-${card.number} ${card.character}` : ""} /> : <span className="digital-card-back"><PackSigil /><b>GODDESS STORY</b><i>{String(index + 1).padStart(2, "0")}</i></span>}
+                        {visible ? <img src={cardImage(card)} draggable={false} alt={current ? `${card.rarity}-${card.number} ${card.character}` : ""} /> : <span className="digital-card-back"><PackSigil /><b>GODDESS STORY</b><i>{String(index + 1).padStart(2, "0")}</i></span>}
                         {current && rarityTier(card.rarity) >= 2 && <span className="card-holo" />}
                         {current && rarityTier(card.rarity) >= 3 && <span className="card-spark"><i /><i /><i /></span>}
                       </span>
@@ -633,14 +650,16 @@ export default function Home() {
               </div>
               <button className="nav-orb nav-previous" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); previousCard(); } }} onClick={(event) => { if (event.detail === 0) previousCard(); }} disabled={activeIndex === 0 || transitioning} aria-label="Vorherige Karte">←</button>
               <button className="nav-orb nav-next" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); nextCard(); } }} onClick={(event) => { if (event.detail === 0) nextCard(); }} disabled={transitioning} aria-label={activeIndex === pack.length - 1 ? "Pack ansehen" : "Nächste Karte"}>→</button>
-              <div className="progress-rail" aria-label={`${activeIndex + 1} von ${pack.length} Karten`}>{pack.map((card, index) => <i key={`${card.id}-${index}`} className={index <= revealedThrough ? "is-revealed" : ""} />)}</div>
-              <button className="detail-hint" onClick={() => setInspectorOpen(true)}><b>{active.rarity}</b><span>TAP CARD FOR DETAILS</span></button>
+              <div className="pull-caption" aria-live="polite" aria-atomic="true"><b style={{ color: rarityColor(active.rarity) }}>{active.rarity}</b><span><strong>{active.character || "Unknown character"}</strong><small>{active.title}</small></span></div>
+              <div className="pull-trail" aria-label="Cards in this pack">{pack.map((card, index) => <button key={`${card.id}-${index}`} disabled={index > revealedThrough} aria-label={index <= revealedThrough ? `Card ${index + 1}: ${card.rarity} ${card.character}` : `Card ${index + 1}: unrevealed`} aria-current={index === activeIndex ? "step" : undefined} onClick={() => navigateCard(index)} style={{ "--pull-color": index <= revealedThrough ? rarityColor(card.rarity) : "#604568" } as CSSProperties}><i />{index <= revealedThrough ? card.rarity : "·"}</button>)}</div>
+              <button className="detail-hint" onClick={() => setInspectorOpen(true)}><span>Swipe to reveal · Tap for details</span></button>
+              {activeIndex === freshIndex && rarityTier(active.rarity) >= 3 && <div key={`confetti-${hitNonce}`} className="pull-confetti" aria-hidden="true">{Array.from({ length: 12 }, (_, i) => <i key={i} style={{ "--angle": `${i * 30}deg`, "--flight": `${110 + (i % 3) * 40}px`, "--delay": `${(i % 3) * 35}ms` } as CSSProperties} />)}</div>}
             </div>
           )}
 
           {mode === "altar" && phase === "summary" && pack.length > 0 && (
             <div className="pack-summary">
-              <div className="summary-heading"><span>BOOSTER COMPLETE</span><h1>{selectedPack?.setName}</h1><p>Every card, in the order you pulled it.</p></div>
+              <div className="summary-heading"><span>BOOSTER COMPLETE · {pack.length} CARDS</span><h1>{selectedPack?.setName}</h1><p>Best pull: {pack.reduce((best, card) => rarityTier(card.rarity) > rarityTier(best.rarity) ? card : best).rarity} · {pack.reduce((best, card) => rarityTier(card.rarity) > rarityTier(best.rarity) ? card : best).character}</p></div>
               <div className={`summary-grid summary-${pack.length}`}>
                 {pack.map((card, index) => (
                   <button key={`${card.id}-${index}`} style={{ "--card-color": rarityColor(card.rarity), "--delay": `${index * 45}ms` } as CSSProperties} onClick={() => { setActiveIndex(index); setRevealedThrough(pack.length - 1); setFreshIndex(-1); revealedRef.current = pack.length - 1; setDirection(1); setTransitioning(false); setPhase("revealing"); setInspectorOpen(true); }} aria-label={`${card.rarity} ${card.character} anzeigen`}>
@@ -658,7 +677,7 @@ export default function Home() {
         {mode === "altar" && <div className="action-dock">
           {phase === "sealed" && <button className="primary-action" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); void openPack(); } }} onClick={(event) => { if (event.detail === 0) void openPack(); }} disabled={!dataReady}><span>RIP THIS BOOSTER</span><i>↗</i></button>}
           {phase === "opening" && <div className="opening-meter"><i /><span>DEALING YOUR CARDS</span></div>}
-          {phase === "revealing" && <button className="primary-action next-action" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); nextCard(); } }} onClick={(event) => { if (event.detail === 0) nextCard(); }} disabled={transitioning}><span>{transitioning ? "DEALING…" : activeIndex === pack.length - 1 ? "SHOW FULL PACK" : "NEXT CARD"}</span><i>→</i></button>}
+          {phase === "revealing" && <button className="primary-action next-action" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); nextCard(); } }} onClick={(event) => { if (event.detail === 0) nextCard(); }} aria-disabled={transitioning}><span>{activeIndex === pack.length - 1 ? "SHOW FULL PACK" : "NEXT CARD"}<small>{activeIndex + 1} / {pack.length}</small></span><i>→</i></button>}
           {phase === "summary" && <button className="primary-action" onClick={prizeLock ? returnToGame : resetForAnother}><span>{prizeLock ? `BACK TO ${prizeReturnMode === "duel" ? "HEARTLOCK" : "WAIFU 21"}` : "OPEN ANOTHER"}</span><i>{prizeLock ? "←" : "↻"}</i></button>}
         </div>}
 

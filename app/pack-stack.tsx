@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useSyncExternalStore, type CSSProperties, type PointerEvent } from "react";
 import { rarityTier } from "./gacha-engine";
-import { swipeIntent, cardDragTransform, gestureMode, peekAmount, phonePeekAmount, phoneSwipeIntent, phoneReleaseVelocity, PHONE_GESTURE_QUERY, type GestureMode, type MotionSample } from "./pack-gestures";
+import { swipeIntent, cardDragTransform, gestureMode, peekAmount, phonePeekAmount, phonePeekVector, phoneSwipeIntent, phoneReleaseVelocity, PHONE_GESTURE_QUERY, type GestureMode, type MotionSample } from "./pack-gestures";
 
 function subscribePhone(callback: () => void) {
   const media = window.matchMedia(PHONE_GESTURE_QUERY);
@@ -41,9 +41,12 @@ export function PackStack({ cards, activeIndex, onNext, onPrevious, onInspect, o
   const releaseVector = useRef<{ x: number; y: number } | null>(null);
   const tier = rarityTier(cards[activeIndex].rarity);
 
-  function setPeek(amount: number, lean = 0) {
+  function setPeek(amount: number, lean = 0, direction?: { x: number; y: number }) {
     scene.current?.style.setProperty("--peek", String(amount));
     scene.current?.style.setProperty("--peek-lean", `${lean}deg`);
+    scene.current?.style.setProperty("--peek-x", String(direction?.x ?? amount));
+    scene.current?.style.setProperty("--peek-y", String(direction?.y ?? 0));
+    scene.current?.style.setProperty("--peek-pitch", `${direction ? -direction.y * 27 : amount * 7}deg`);
     deck.current?.toggleAttribute("data-peeking", amount > .02);
     peekButton.current?.setAttribute("aria-pressed", String(amount > .02));
   }
@@ -137,10 +140,13 @@ export function PackStack({ cards, activeIndex, onNext, onPrevious, onInspect, o
     const card = elements.current.get(activeIndex);
     if (current.mode === "peek") {
       const amount = current.phone ? phonePeekAmount(dx, dy, current.width, current.height) : peekAmount(dy, current.height);
-      setPeek(amount, Math.max(-6, Math.min(6, dx / current.width * 12)));
+      setPeek(amount, Math.max(-6, Math.min(6, dx / current.width * 12)),
+        current.phone ? phonePeekVector(dx, dy, current.width, current.height) : undefined);
       const motion = phoneReleaseVelocity(current.samples, event.timeStamp);
       const slowPeek = !current.phone || (event.timeStamp - current.time >= 80 && Math.hypot(motion.x, motion.y) < .55);
       if (amount > .15 && !current.sounded && slowPeek) { current.sounded = true; onPeek(); }
+    } else if (current.phone) {
+      setPeek(0);
     } else if (current.mode === "swipe") {
       pinnedPeek.current = false;
       setPeek(0);

@@ -5173,8 +5173,8 @@ body {
 
 /* The fixed touch pad owns input; the presentation can tilt, lift and settle. */
 .mode-altar .tactile-stack { perspective: none; transform-style: flat; isolation: isolate; overflow: visible; }
-.pack-scene { position: absolute; inset: 0; --peek: 0; --shine-x: 50%; transform-origin: 50% 70%; transform-style: flat;
-  transform: perspective(1000px) translateX(calc(var(--peek) * 10px)) rotateY(calc(var(--peek) * 27deg)) rotateX(calc(var(--peek) * 7deg)) rotateZ(var(--peek-lean,0deg));
+.pack-scene { position: absolute; inset: 0; --peek: 0; --peek-x: 0; --peek-y: 0; --shine-x: 50%; transform-origin: 50% 70%; transform-style: flat;
+  transform: perspective(1000px) translate(calc(var(--peek-x) * 10px),calc(var(--peek-y) * 10px)) rotateY(calc(var(--peek-x) * 27deg)) rotateX(var(--peek-pitch,0deg)) rotateZ(var(--peek-lean,0deg));
   transition: transform 320ms cubic-bezier(.18,.85,.25,1);
 }
 .tactile-stack[data-touching] .pack-scene { transition-duration: 60ms; }
@@ -5202,8 +5202,10 @@ body {
 .mode-altar .pack-touch-pad:focus-visible { outline: 3px solid var(--ui-yellow); outline-offset: 4px; }
 .pack-stock { position: absolute; inset: 0; z-index: 0; border-radius: 12px; box-shadow: 2px 2px 0 #b9abbf, 3px 3px 0 #282030, 4px 4px 0 #d2c7d6; pointer-events: none; }
 .pack-peek-edges { position: absolute; inset: 0; z-index: 2; opacity: var(--peek); pointer-events: none; transition: opacity 180ms; }
-.pack-peek-edges i { position: absolute; inset: 0; border-radius: 12px; border: 1px solid #8b7c92; border-left: 4px solid var(--edge-color); background: #ded5e2;
-  transform: translateX(calc(var(--peek) * var(--edge) * -6px)); box-shadow: -1px 0 2px #130b1b55;
+.pack-peek-edges i { position: absolute; inset: 0; border-radius: 12px; border: 1px solid var(--edge-color); background: #ded5e2;
+  border-left-width: max(1px,calc(var(--peek-x) * 4px)); border-right-width: max(1px,calc(var(--peek-x) * -4px));
+  border-top-width: max(1px,calc(var(--peek-y) * 4px)); border-bottom-width: max(1px,calc(var(--peek-y) * -4px));
+  transform: translate(calc(var(--peek-x) * var(--edge) * -6px),calc(var(--peek-y) * var(--edge) * -6px)); box-shadow: 0 0 2px #130b1b55;
   transition: transform 260ms cubic-bezier(.18,.85,.25,1);
 }
 .tactile-stack[data-touching] .pack-peek-edges i { transition-duration: 60ms; }

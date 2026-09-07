@@ -26,6 +26,14 @@ export function phonePeekAmount(dx: number, dy: number, width: number, height: n
   return Math.min(1, Math.hypot(dx, dy) / Math.max(70, Math.min(width, height) * .33));
 }
 
+// Signed components keep diagonal peeks continuous and expose the opposite edge.
+export function phonePeekVector(dx: number, dy: number, width: number, height: number) {
+  const distance = Math.hypot(dx, dy);
+  if (!distance) return { x: 0, y: 0 };
+  const amount = phonePeekAmount(dx, dy, width, height);
+  return { x: dx / distance * amount, y: dy / distance * amount };
+}
+
 export function gestureMode(dx: number, dy: number, current: GestureMode): GestureMode {
   if (current !== "pending") return current;
   if (Math.max(Math.abs(dx), Math.abs(dy)) < 10) return "pending";

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { swipeIntent, cardDragTransform, gestureMode, peekAmount, phoneSwipeIntent, phoneReleaseVelocity, phonePeekAmount } from "../app/pack-gestures.ts";
+import { swipeIntent, cardDragTransform, gestureMode, peekAmount, phoneSwipeIntent, phoneReleaseVelocity, phonePeekAmount, phonePeekVector } from "../app/pack-gestures.ts";
 import { readFile } from "node:fs/promises";
 
 test("a slow swipe scales to the phone card width", () => {
@@ -72,6 +72,29 @@ test("phone flicks advance forward in all eight directions", () => {
     assert.equal(phoneSwipeIntent(dx, dy, 320, samples, 80), 1);
     assert.ok(phonePeekAmount(dx, dy, 320, 440) > .5);
   }
+});
+
+test("phone peeks follow the finger and expose the opposite edges", () => {
+  assert.deepEqual(phonePeekVector(0,0,320,440), {x:0,y:0});
+  for (const [dx,dy] of [[80,0],[-80,0],[0,80],[0,-80],[60,60],[-60,60],[60,-60],[-60,-60]]) {
+    const vector = phonePeekVector(dx,dy,320,440);
+    assert.equal(Math.sign(vector.x),Math.sign(dx));
+    assert.equal(Math.sign(vector.y),Math.sign(dy));
+    assert.ok(Math.abs(Math.hypot(vector.x,vector.y)-phonePeekAmount(dx,dy,320,440)) < 1e-10);
+    // Each underlying edge fans out against the finger, not in a fixed direction.
+    assert.ok(vector.x * -6 * dx <= 0);
+    assert.ok(vector.y * -6 * dy <= 0);
+  }
+  assert.ok(Math.hypot(...Object.values(phonePeekVector(1000,1000,320,440))) <= 1);
+});
+
+test("directional peeks wire both signed axes into tilt and edge translation", async () => {
+  const source = await readFile(new URL("../app/pack-stack.tsx", import.meta.url), "utf8");
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(source, /current.phone \? phonePeekVector/);
+  assert.match(source, /direction \? -direction.y \* 27 : amount \* 7/);
+  assert.match(css, /rotateY\(calc\(var\(--peek-x\) \* 27deg\)\)/);
+  assert.match(css, /translate\(calc\(var\(--peek-x\) \* var\(--edge\) \* -6px\),calc\(var\(--peek-y\) \* var\(--edge\) \* -6px\)\)/);
 });
 
 test("phone slow drags remain peeks even across the entire card", () => {

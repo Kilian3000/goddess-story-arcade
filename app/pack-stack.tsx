@@ -1,8 +1,16 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, type CSSProperties, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useSyncExternalStore, type CSSProperties, type PointerEvent } from "react";
 import { rarityTier } from "./gacha-engine";
-import { swipeIntent, cardDragTransform, gestureMode, peekAmount, type GestureMode } from "./pack-gestures";
+import { swipeIntent, cardDragTransform, gestureMode, peekAmount, phonePeekAmount, phoneSwipeIntent, phoneReleaseVelocity, PHONE_GESTURE_QUERY, type GestureMode, type MotionSample } from "./pack-gestures";
+
+function subscribePhone(callback: () => void) {
+  const media = window.matchMedia(PHONE_GESTURE_QUERY);
+  media.addEventListener("change", callback);
+  return () => media.removeEventListener("change", callback);
+}
+const phoneSnapshot = () => window.matchMedia(PHONE_GESTURE_QUERY).matches;
+const serverPhoneSnapshot = () => false;
 
 type StackCard = { id: number; image: string; character: string; rarity: string; color: string };
 type Props = {
@@ -16,9 +24,11 @@ type Props = {
 type Gesture = {
   x: number; y: number; time: number; lastX: number; lastTime: number; velocity: number;
   width: number; height: number; pointerId: number; mode: GestureMode; sounded: boolean; offset: number;
+  phone: boolean; samples: MotionSample[];
 };
 
 export function PackStack({ cards, activeIndex, onNext, onPrevious, onInspect, onPeek }: Props) {
+  const phone = useSyncExternalStore(subscribePhone, phoneSnapshot, serverPhoneSnapshot);
   const deck = useRef<HTMLDivElement>(null);
   const scene = useRef<HTMLDivElement>(null);
   const peekButton = useRef<HTMLButtonElement>(null);
@@ -28,6 +38,7 @@ export function PackStack({ cards, activeIndex, onNext, onPrevious, onInspect, o
   const gesture = useRef<Gesture | null>(null);
   const consumeClick = useRef(false);
   const pinnedPeek = useRef(false);
+  const releaseVector = useRef<{ x: number; y: number } | null>(null);
   const tier = rarityTier(cards[activeIndex].rarity);
 
   function setPeek(amount: number, lean = 0) {
@@ -50,6 +61,8 @@ export function PackStack({ cards, activeIndex, onNext, onPrevious, onInspect, o
 
   useLayoutEffect(() => {
     const previous = previousIndex.current;
+    const flight = releaseVector.current;
+    releaseVector.current = null;
     previousIndex.current = activeIndex;
     gesture.current = null;
     pinnedPeek.current = false;
@@ -72,11 +85,19 @@ export function PackStack({ cards, activeIndex, onNext, onPrevious, onInspect, o
     const from = getComputedStyle(outgoing).transform;
     outgoing.style.transform = "";
     const sign = activeIndex > previous ? -1 : 1;
-    const travel = Math.max(outgoing.offsetWidth * 1.4, window.innerWidth / 2 + outgoing.offsetWidth / 2 + 24);
+    const vector = flight || { x: sign, y: 0 };
+    const bounds = outgoing.getBoundingClientRect();
+    const travel = flight
+      ? Math.min(
+        vector.x ? ((vector.x > 0 ? window.innerWidth - bounds.left : bounds.right) + 40) / Math.abs(vector.x) : Infinity,
+        vector.y ? ((vector.y > 0 ? window.innerHeight - bounds.top : bounds.bottom) + 40) / Math.abs(vector.y) : Infinity,
+      )
+      : Math.max(outgoing.offsetWidth * 1.4, window.innerWidth / 2 + outgoing.offsetWidth / 2 + 24);
+    const rotation = (vector.x || vector.y) * 17;
     animateCard(previous, [
       { transform: from, opacity: 1, visibility: "visible", zIndex: 5 },
-      { transform: `translate3d(${sign * travel * .65}px,-30px,0) rotate(${sign * 11}deg)`, opacity: 1, visibility: "visible", zIndex: 5, offset: .65 },
-      { transform: `translate3d(${sign * travel}px,-48px,0) rotate(${sign * 17}deg)`, opacity: 0, visibility: "visible", zIndex: 5 },
+      { transform: `translate3d(${vector.x * travel * .65}px,${vector.y * travel * .65 - 30}px,0) rotate(${rotation * .65}deg)`, opacity: 1, visibility: "visible", zIndex: 5, offset: .65 },
+      { transform: `translate3d(${vector.x * travel}px,${vector.y * travel - 48}px,0) rotate(${rotation}deg)`, opacity: 0, visibility: "visible", zIndex: 5 },
     ], { duration: reduced ? 0 : 310, easing: "cubic-bezier(.2,.65,.3,1)" });
   }, [activeIndex]);
 
@@ -96,6 +117,7 @@ export function PackStack({ cards, activeIndex, onNext, onPrevious, onInspect, o
       x: event.clientX, y: event.clientY, time: event.timeStamp, lastX: event.clientX,
       lastTime: event.timeStamp, velocity: 0, width: event.currentTarget.offsetWidth,
       height: event.currentTarget.offsetHeight, pointerId: event.pointerId, mode: "pending", sounded: false, offset: position.m41,
+      phone, samples: [{ x: event.clientX, y: event.clientY, time: event.timeStamp }],
     };
     deck.current?.setAttribute("data-touching", "");
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -109,13 +131,16 @@ export function PackStack({ cards, activeIndex, onNext, onPrevious, onInspect, o
     current.velocity = (event.clientX - current.lastX) / Math.max(1, event.timeStamp - current.lastTime);
     current.lastX = event.clientX;
     current.lastTime = event.timeStamp;
-    current.mode = gestureMode(dx, dy, current.mode);
+    current.samples = [...current.samples, { x: event.clientX, y: event.clientY, time: event.timeStamp }].filter(sample => sample.time >= event.timeStamp - 140);
+    current.mode = current.phone ? (Math.hypot(dx, dy) >= 8 ? "peek" : "pending") : gestureMode(dx, dy, current.mode);
     if (Math.max(Math.abs(dx), Math.abs(dy)) > 8) consumeClick.current = true;
     const card = elements.current.get(activeIndex);
     if (current.mode === "peek") {
-      const amount = peekAmount(dy, current.height);
+      const amount = current.phone ? phonePeekAmount(dx, dy, current.width, current.height) : peekAmount(dy, current.height);
       setPeek(amount, Math.max(-6, Math.min(6, dx / current.width * 12)));
-      if (amount > .15 && !current.sounded) { current.sounded = true; onPeek(); }
+      const motion = phoneReleaseVelocity(current.samples, event.timeStamp);
+      const slowPeek = !current.phone || (event.timeStamp - current.time >= 80 && Math.hypot(motion.x, motion.y) < .55);
+      if (amount > .15 && !current.sounded && slowPeek) { current.sounded = true; onPeek(); }
     } else if (current.mode === "swipe") {
       pinnedPeek.current = false;
       setPeek(0);
@@ -136,10 +161,18 @@ export function PackStack({ cards, activeIndex, onNext, onPrevious, onInspect, o
     const dy = event.clientY - current.y;
     consumeClick.current ||= cancelled || current.mode !== "pending" || Math.max(Math.abs(dx), Math.abs(dy)) > 8;
     const releaseVelocity = event.timeStamp - current.lastTime < 80 ? current.velocity : 0;
-    // Once an upward tilt owns the gesture, sideways motion cannot turn it into a reveal.
-    const intent = cancelled || current.mode !== "swipe" ? 0 : swipeIntent(dx, dy, event.timeStamp - current.time, current.width, releaseVelocity);
+    current.samples.push({ x: event.clientX, y: event.clientY, time: event.timeStamp });
+    // Phones use release speed in every direction; desktop retains axis-based controls.
+    const intent = cancelled ? 0 : current.phone
+      ? phoneSwipeIntent(dx, dy, current.width, current.samples, event.timeStamp)
+      : current.mode !== "swipe" ? 0 : swipeIntent(dx, dy, event.timeStamp - current.time, current.width, releaseVelocity);
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     if (intent === 1 || (intent === -1 && activeIndex > 0)) {
+      if (current.phone) {
+        const velocity = phoneReleaseVelocity(current.samples, event.timeStamp);
+        const speed = Math.hypot(velocity.x, velocity.y);
+        releaseVector.current = { x: velocity.x / speed, y: velocity.y / speed };
+      }
       if (intent === 1) onNext();
       else onPrevious();
     } else {
@@ -181,7 +214,7 @@ export function PackStack({ cards, activeIndex, onNext, onPrevious, onInspect, o
           </span>;
         })}
       </div>
-      <button className="pack-touch-pad" aria-label={`${active.rarity} ${active.character}. Swipe left to reveal, drag up to peek, or tap for details.`}
+      <button className="pack-touch-pad" aria-label={`${active.rarity} ${active.character}. ${phone ? "Drag slowly to peek; flick in any direction for the next card" : "Swipe left to reveal, drag up to peek"}, or tap for details.`}
         onDragStart={event => event.preventDefault()} onContextMenu={event => event.preventDefault()}
         onPointerDown={down} onPointerMove={move} onPointerUp={event => finish(event)}
         onPointerCancel={event => finish(event, true)}
@@ -198,7 +231,8 @@ export function PackStack({ cards, activeIndex, onNext, onPrevious, onInspect, o
           setPeek(pinnedPeek.current ? .85 : 0);
           if (pinnedPeek.current) onPeek();
         }}>▱ <span>PEEK</span></button>
-      <p>Drag up to peek<br /><span>Swipe left to reveal</span></p>
+      <p className="desktop-gesture-hint">Drag up to peek<br /><span>Swipe left to reveal</span></p>
+      <p className="phone-gesture-hint">Slow drag to peek · Quick flick for next</p>
     </div>
   </>;
 }

@@ -1,5 +1,31 @@
 export type GestureMode = "pending" | "peek" | "swipe";
 
+export const PHONE_GESTURE_QUERY = "(max-width: 700px), (pointer: coarse) and (max-width: 1000px) and (max-height: 600px)";
+export type MotionSample = { x: number; y: number; time: number };
+
+// Measure the release, not the total gesture: a slow peek can end in a flick,
+// and a fast movement followed by a pause must not unexpectedly reveal a card.
+export function phoneReleaseVelocity(samples: MotionSample[], now: number) {
+  const recent = samples.filter(sample => sample.time >= now - 100 && sample.time <= now);
+  if (recent.length < 2) return { x: 0, y: 0 };
+  const first = recent[0];
+  const last = recent[recent.length - 1];
+  const elapsed = last.time - first.time;
+  if (elapsed < 8) return { x: 0, y: 0 };
+  return { x: (last.x - first.x) / elapsed, y: (last.y - first.y) / elapsed };
+}
+
+export function phoneSwipeIntent(dx: number, dy: number, width: number, samples: MotionSample[], now: number): 0 | 1 {
+  const distance = Math.hypot(dx, dy);
+  const velocity = phoneReleaseVelocity(samples, now);
+  const minimumTravel = Math.max(20, Math.min(28, width * .07));
+  return distance >= minimumTravel && Math.hypot(velocity.x, velocity.y) >= .55 ? 1 : 0;
+}
+
+export function phonePeekAmount(dx: number, dy: number, width: number, height: number): number {
+  return Math.min(1, Math.hypot(dx, dy) / Math.max(70, Math.min(width, height) * .33));
+}
+
 export function gestureMode(dx: number, dy: number, current: GestureMode): GestureMode {
   if (current !== "pending") return current;
   if (Math.max(Math.abs(dx), Math.abs(dy)) < 10) return "pending";

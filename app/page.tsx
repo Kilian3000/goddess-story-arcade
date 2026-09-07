@@ -530,7 +530,7 @@ export default function Home() {
     : undefined;
 
   return (
-    <main className={`gacha-stage ${palette} phase-${phase} mode-${mode}`} style={sceneStyle}>
+    <main className={`gacha-stage ${palette} phase-${phase} mode-${mode}${showMenu ? " menu-open" : ""}`} style={sceneStyle}>
       <div className="scene-vignette" /><div className="constellation constellation-a" /><div className="constellation constellation-b" />
       <div className="orbit orbit-one" /><div className="orbit orbit-two" />
       <div className="dust" aria-hidden="true">{Array.from({ length: 12 }, (_, index) => <i key={index} />)}</div>

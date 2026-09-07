@@ -38,6 +38,15 @@ test("phone carousel owns touch immediately and ignores child capture loss", asy
   assert.match(css,/booster-float/);
 });
 
+test("mobile removes redundant navigation and clears controls behind the pack menu", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url),"utf8");
+  const css = await readFile(new URL("../app/globals.css", import.meta.url),"utf8");
+  assert.match(page,/showMenu \? " menu-open" : ""/);
+  assert.match(css,/\.mode-altar \.carousel-controls button \{ display: none; \}/);
+  assert.match(css,/\.mode-altar\.phase-revealing \.action-dock \{ display: none; \}/);
+  assert.match(css,/\.mode-altar\.menu-open \.booster-carousel,[\s\S]*?visibility: hidden; pointer-events: none;/);
+});
+
 test("a slow swipe scales to the phone card width", () => {
   assert.equal(swipeIntent(-55, 3, 400, 240), 1);
   assert.equal(swipeIntent(55, 3, 400, 240), -1);
@@ -129,7 +138,7 @@ test("directional peeks wire both signed axes into tilt and edge translation", a
   assert.match(source, /current.phone \? phonePeekVector/);
   assert.match(source, /direction \? -direction.y \* 27 : amount \* 7/);
   assert.match(css, /rotateY\(calc\(var\(--peek-x\) \* 27deg\)\)/);
-  assert.match(css, /translate\(calc\(var\(--peek-x\) \* var\(--edge\) \* -2\.2px\),calc\(var\(--peek-y\) \* var\(--edge\) \* -2\.2px\)\)/);
+  assert.match(css, /translate\(calc\(var\(--peek-x\) \* var\(--edge\) \* -2\.8px\),calc\(var\(--peek-y\) \* var\(--edge\) \* -2\.8px\)\)/);
 });
 
 test("phone slow drags remain peeks even across the entire card", () => {

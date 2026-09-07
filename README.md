@@ -4,17 +4,29 @@
 
 A fan-made browser arcade for Goddess Story boosters.
 
-This started with a simple problem: opening digital packs felt flat. Here you actually rip the wrapper, peel through the cards, hear the hits, and have two slightly questionable ways to gamble for more packs.
+This started with a simple problem: opening digital packs felt flat. Browse a ring of boosters, pick the one that feels lucky, rip the wrapper, and work through the cards. There are also two games for winning more packs.
 
 Everything needed to run it is in this repository, including the card catalog and artwork. No account, API key, tracker, or separate image server is required.
 
 > **18+ project:** some cards and character artwork are suggestive or NSFW.
 
-![Goddess Story pack-opening screen](docs/showcase/pack-opening.jpg)
+![Choose a booster from the rotating pack carousel](docs/showcase/pack-carousel.png)
+
+## New in 0.2
+
+The pack carousel is purely for fun: all twelve positions have the same odds. Swipe to spin it, tap a side pack to bring it forward, then pick one up to open. You can change your mind before ripping.
+
+On phones, a slow drag tilts the stack and exposes the opposite edges. A quick flick in any direction reveals the next card—never the previous one. Tap the card for details.
+
+<p align="center">
+  <img src="docs/showcase/carousel-phone.png" width="38%" alt="Phone booster carousel">
+  <img src="docs/showcase/reveal-phone.png" width="38%" alt="Phone card reveal with directional peek controls">
+</p>
 
 ## What is in here?
 
 - **Open Packs:** 47 booster configurations across the 1, 2, 5, 10, and 20 yuan lines.
+- **Pick your pack:** a looping, swipeable booster carousel with momentum and snap-to-pack selection. No odds tricks.
 - **Pack collation that makes sense:** cards are drawn from ordered rarity slots instead of one flat random pool. Exact duplicate cards are blocked inside a single pack.
 - **Proper pack-opening feedback:** ripping, card swipes, rarity effects, keyboard/touch controls, sound effects, and procedural music.
 - **Waifu 21:** blackjack against a rotating dealer. Better hands win better packs.
@@ -70,6 +82,8 @@ If a deployment needs a different catalog or image source later, copy `.env.exam
 ## Where things live
 
 - `app/page.tsx` — main arcade and pack-opening flow
+- `app/pack-carousel.tsx` — pre-opening booster selection
+- `app/pack-stack.tsx` — card movement and directional peeking
 - `app/gacha-engine.ts` — pack recipes and rarity collation
 - `app/use-gacha-audio.ts` — music and sound effects
 - `app/lucky-shrine.tsx` — Waifu 21

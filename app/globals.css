@@ -5259,3 +5259,45 @@ body {
   .stack-gesture-controls { top: 72px; }
   .stack-gesture-controls .phone-gesture-hint { display: none; }
 }
+
+/* A ring of sealed boosters. The choice is a ritual, never an odds modifier. */
+.booster-carousel { width: min(1200px,100vw); text-align: center; position: relative; align-self: center; padding: 12px 0 20px; }
+.carousel-heading { position: relative; z-index: 1; pointer-events: none; }
+.carousel-heading small { color: var(--ui-yellow); font: 700 14px/1.4 monospace; letter-spacing: .13em; }
+.carousel-heading h1 { font: italic 900 clamp(32px,4vw,56px)/.94 Impact,sans-serif; color: var(--ui-cream); margin: 10px 0 0; }
+.carousel-heading em { color: var(--ui-pink); font-style: inherit; }
+.carousel-ring { --radius: min(38vw,420px); position: relative; height: clamp(230px,40svh,410px); perspective: 1100px; touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: grab; }
+.carousel-ring:active { cursor: grabbing; }
+.carousel-floor { position: absolute; inset: 55% 8% -12%; background: radial-gradient(ellipse,#f947a029,transparent 65%); transform: rotateX(60deg); border: 1px solid #b88ab330; border-radius: 50%; pointer-events: none; }
+.mode-altar .carousel-pack { position: absolute; top: 51%; left: 50%; width: clamp(140px,19vw,230px); aspect-ratio: 2/3; padding: 0; border: 0; background: none; box-shadow: none; border-radius: 0; cursor: grab;
+  transform: translate(-50%,-50%) translate3d(calc(var(--ring-x) * var(--radius)),calc(var(--ring-depth) * 35px),calc(var(--ring-depth) * var(--radius))) rotateY(var(--ring-turn));
+  filter: brightness(var(--pack-light)); transition: none; will-change: transform;
+}
+.carousel-wrapper { display: block; position: absolute; inset: 0; overflow: hidden; background: #6b2855; border: 2px solid #c898cf; box-shadow: 3px 10px 20px #05020980; clip-path: polygon(0 0,100% 0,98% 3%,100% 6%,98% 9%,100% 12%,100% 88%,98% 91%,100% 94%,98% 97%,100% 100%,0 100%,2% 97%,0 94%,2% 91%,0 88%,0 12%,2% 9%,0 6%,2% 3%); }
+.carousel-wrapper > img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.carousel-foil { position: absolute; inset: 0; background: linear-gradient(110deg,#ffd38a33,transparent 35%,#ff78c533 65%,#20112788),linear-gradient(0deg,#15091fe8,transparent 45%,#15091faa); pointer-events: none; }
+.carousel-wrapper::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg,#fff6 0 1px,#36102788 1px 3px,transparent 3px 5px); clip-path: polygon(0 0,100% 0,100% 5%,0 5%,0 95%,100% 95%,100% 100%,0 100%); }
+.carousel-title { position: absolute; top: 9%; left: 8%; text-align: left; color: #fff4cf; font: italic 900 clamp(25px,3.5vw,42px)/.88 Impact,sans-serif; text-shadow: 2px 2px #38102e; }
+.carousel-title b { color: #ff49a6; }
+.carousel-edition { position: absolute; left: 5%; right: 5%; bottom: 9%; color: #fff0cf; font: 900 clamp(20px,2.5vw,30px)/1 Impact,sans-serif; }
+.carousel-edition small { display: block; margin-top: 6px; font: 700 10px/1.2 monospace; }
+.carousel-controls { display: flex; align-items: center; justify-content: center; gap: 30px; position: relative; z-index: 210; margin: 5px 0 12px; }
+.mode-altar .carousel-controls button { width: 46px; height: 42px; border: 1px solid #bb85a866; background: #211229; color: var(--ui-cream); font-size: 24px; border-radius: 50%; }
+.carousel-controls > span { font: 700 18px monospace; color: var(--ui-cream); }.carousel-controls i { font-style: normal; color: #a58aaf; font-size: 14px; }
+.mode-altar .carousel-choose { display: inline-flex; align-items: center; justify-content: space-between; gap: 35px; min-width: 250px; padding: 16px 23px; border: 2px solid #0c0712; background: var(--ui-pink); color: var(--ui-cream); box-shadow: 5px 5px #09050d; font: italic 900 26px/1 Impact,sans-serif; }
+.carousel-note { margin: 14px 0 0; color: #c8afcf; font-size: 14px; }
+.mode-altar .choose-again { display: block; margin: 12px auto 0; padding: 6px; background: none; border: 0; color: #4c2455; text-decoration: underline; font-size: 14px; }
+.carousel-pack:focus-visible, .carousel-controls button:focus-visible, .carousel-choose:focus-visible { outline: 3px solid var(--ui-yellow); outline-offset: 5px; }
+.is-chosen .carousel-pack:not(.is-front) { opacity: 0; transition: opacity 200ms; }
+.is-chosen .carousel-pack.is-front .carousel-wrapper { animation: carousel-pick 280ms cubic-bezier(.2,.7,.3,1) both; }
+@keyframes carousel-pick { to { transform: translateY(-12px) scale(1.15); filter: brightness(1.15); } }
+@media (max-width:700px) {
+  .booster-carousel { padding: 0 0 14px; }
+  .carousel-ring { --radius: 62vw; height: clamp(215px,36svh,320px); }
+  .mode-altar .carousel-pack { width: min(46vw,calc((100svh - 370px) * .67)); min-width: 126px; }
+  .carousel-heading h1 { font-size: 34px; }
+  .carousel-title { font-size: 28px; }.carousel-edition { font-size: 23px; }
+  .carousel-controls { margin-top: 0; gap: 24px; }
+  .mode-altar .carousel-choose { font-size: 24px; padding-block: 14px; }
+}
+@media (prefers-reduced-motion:reduce) { .is-chosen .carousel-pack.is-front .carousel-wrapper { animation: none; } }

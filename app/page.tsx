@@ -18,6 +18,7 @@ import {
 import { arcadeConfig, cardAsset } from "./arcade-config";
 import { packHaptic } from "./pack-gestures";
 import { PackStack } from "./pack-stack";
+import { PackCarousel } from "./pack-carousel";
 import { LuckyShrine, type WaifuMuse } from "./lucky-shrine";
 import { TemptationDuel } from "./temptation-duel";
 import { useGachaAudio } from "./use-gacha-audio";
@@ -161,6 +162,7 @@ export default function Home() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [revealedThrough, setRevealedThrough] = useState(-1);
   const [phase, setPhase] = useState<Phase>("sealed");
+  const [packChosen, setPackChosen] = useState(false);
   const [mode, setMode] = useState<ExperienceMode>("altar");
   const [prizeLock, setPrizeLock] = useState<PackConfig | null>(null);
   const [prizeReturnMode, setPrizeReturnMode] = useState<"shrine" | "duel">("shrine");
@@ -271,6 +273,7 @@ export default function Home() {
       setTransitioning(false);
       inputLock.current = false;
       setPhase("sealed");
+      setPackChosen(false);
       setInspectorOpen(false);
       setTearProgress(0);
       setGenerationError("");
@@ -368,7 +371,7 @@ export default function Home() {
   }, [inspectorOpen, nextCard, phase, previousCard, showInfo, showMenu]);
 
   const openPack = useCallback(async () => {
-    if (!selectedPack || !recipe || !collation || !dataReady || phase !== "sealed" || mode !== "altar" || inputLock.current) return;
+    if (!selectedPack || !recipe || !collation || !dataReady || !packChosen || phase !== "sealed" || mode !== "altar" || inputLock.current) return;
     void startMusic();
     setGenerationError("");
     const token = ++sequence.current;
@@ -423,7 +426,7 @@ export default function Home() {
       setFreshIndex(0);
       setHitNonce((value) => value + 1);
     });
-  }, [collation, dataReady, getPool, mode, opened, phase, playReveal, playTear, recipe, selectedPack, startMusic]);
+  }, [collation, dataReady, getPool, mode, opened, packChosen, phase, playReveal, playTear, recipe, selectedPack, startMusic]);
 
   const onPackPointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
     if (!event.isPrimary || event.button !== 0 || !dataReady || phase !== "sealed") return;
@@ -470,10 +473,12 @@ export default function Home() {
     setInspectorOpen(false);
     setTearProgress(0);
     setPhase("sealed");
+    setPackChosen(false);
   };
   const selectPack = (item: PackConfig) => {
     if (!canChangeSet) return;
     setSelectedPack(item);
+    setPackChosen(false);
     setGroupFilter(item.group);
     setShowMenu(false);
   };
@@ -492,6 +497,7 @@ export default function Home() {
     setInspectorOpen(false);
     setTearProgress(0);
     setPhase("sealed");
+    setPackChosen(false);
   };
   const claimShrinePrize = (item: PackConfig) => claimGamePrize(item, "shrine");
   const claimDuelPrize = (item: PackConfig) => claimGamePrize(item, "duel");
@@ -581,7 +587,9 @@ export default function Home() {
             />
           )}
 
-          {mode === "altar" && selectedPack && (phase === "sealed" || phase === "opening") && (
+          {mode === "altar" && selectedPack && dataReady && phase === "sealed" && !packChosen && <PackCarousel key={selectedPack.setName} art={packMuse.image} character={packMuse.character} setName={selectedPack.setName} cost={selectedPack.cost} cards={selectedPack.odds.cardsPerPack} onTick={() => { void playUiTap(); packHaptic(); }} onChoose={() => { setPackChosen(true); void startMusic(); }} />}
+
+          {mode === "altar" && selectedPack && packChosen && (phase === "sealed" || phase === "opening") && (
             <div className="pack-presentation">
               <div className="pack-halo" />
               <aside className="pack-side pack-side-left" aria-label="Featured adult card artwork">
@@ -605,7 +613,7 @@ export default function Home() {
                 <img src={rivalMuse.image} alt="" />
                 <div className="pack-profile-copy"><small>BOOSTER PROFILE</small><b>{selectedPack.setName}</b><strong>{selectedPack.odds.cardsPerPack}<i>CARDS</i></strong><p>{recipe?.pattern || `${selectedPack.cost} Yuan pack`}</p><em>FEAT. {rivalMuse.character}</em></div>
               </aside>
-              <p className="gesture-hint">Tear across the top <span>or tap to open</span></p>
+              <p className="gesture-hint">Tear across the top <span>or tap to open</span>{phase === "sealed" && <button className="choose-again" onClick={() => { setPackChosen(false); setTearProgress(0); }}>Choose a different pack</button>}</p>
               {phase === "opening" && <p className="opening-copy"><span>✦</span> HERE WE GO</p>}
             </div>
           )}
@@ -643,7 +651,7 @@ export default function Home() {
         {mode === "altar" && selectedPack && (
           <div className={`set-anchor ${prizeLock ? "is-prize" : ""}`}><span className="anchor-kicker">{prizeLock ? `${prizeReturnMode === "duel" ? "HEARTLOCK" : "WAIFU 21"} PRIZE · LOCKED` : "SELECTED BOOSTER"}</span><button onClick={() => canChangeSet ? setShowMenu(true) : setShowInfo(true)}><b>{selectedPack.setName}</b><span>{groupLabels[selectedPack.group] || selectedPack.group} · {selectedPack.odds.cardsPerPack} cards</span></button><small>{opened.toLocaleString("de-DE")} packs opened</small></div>
         )}
-        {mode === "altar" && <div className="action-dock">
+        {mode === "altar" && (phase !== "sealed" || packChosen) && <div className="action-dock">
           {phase === "sealed" && <button className="primary-action" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); void openPack(); } }} onClick={(event) => { if (event.detail === 0) void openPack(); }} disabled={!dataReady}><span>RIP THIS BOOSTER</span><i>↗</i></button>}
           {phase === "opening" && <div className="opening-meter"><i /><span>DEALING YOUR CARDS</span></div>}
           {phase === "revealing" && <button className="primary-action next-action" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); nextCard(); } }} onClick={(event) => { if (event.detail === 0) nextCard(); }}><span>{activeIndex === pack.length - 1 ? "SHOW FULL PACK" : "NEXT CARD"}<small>{activeIndex + 1} / {pack.length}</small></span><i>→</i></button>}

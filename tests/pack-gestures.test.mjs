@@ -2,6 +2,28 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { swipeIntent, cardDragTransform, gestureMode, peekAmount, phoneSwipeIntent, phoneReleaseVelocity, phonePeekAmount, phonePeekVector } from "../app/pack-gestures.ts";
 import { readFile } from "node:fs/promises";
+import { carouselOffset, carouselRelease, CAROUSEL_PACKS } from "../app/carousel-motion.ts";
+
+test("booster carousel wraps in both directions and settles to a bounded slot", () => {
+  assert.equal(CAROUSEL_PACKS,12);
+  assert.equal(carouselOffset(11,0),-1);
+  assert.equal(carouselOffset(0,11),1);
+  assert.equal(carouselOffset(0,1200),0);
+  assert.equal(carouselOffset(0,-1200),0);
+  assert.equal(carouselRelease(2.2,0),2);
+  assert.equal(carouselRelease(2.2,100),5);
+  assert.equal(carouselRelease(2.2,-100),0);
+});
+
+test("pack choice is cosmetic and opening remains the only draw", async () => {
+  const carousel = await readFile(new URL("../app/pack-carousel.tsx", import.meta.url),"utf8");
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url),"utf8");
+  assert.doesNotMatch(carousel,/drawPack|secureRandom|localStorage|rarity/);
+  assert.match(page,/!packChosen \|\| phase !== "sealed"/);
+  assert.equal((page.match(/setPackChosen\(false\)/g)||[]).length,5);
+  assert.match(carousel,/cancelAnimationFrame\(frame.current\)/);
+  assert.match(carousel,/if \(chosen.current \|\| drag.current\) return/);
+});
 
 test("a slow swipe scales to the phone card width", () => {
   assert.equal(swipeIntent(-55, 3, 400, 240), 1);

@@ -5203,9 +5203,9 @@ body {
 .pack-stock { position: absolute; inset: 0; z-index: 0; border-radius: 12px; box-shadow: 2px 2px 0 #b9abbf, 3px 3px 0 #282030, 4px 4px 0 #d2c7d6; pointer-events: none; }
 .pack-peek-edges { position: absolute; inset: 0; z-index: 2; opacity: var(--peek); pointer-events: none; transition: opacity 180ms; }
 .pack-peek-edges i { position: absolute; inset: 0; border-radius: 12px; border: 1px solid var(--edge-color); background: #ded5e2;
-  border-left-width: max(1px,calc(var(--peek-x) * 4px)); border-right-width: max(1px,calc(var(--peek-x) * -4px));
-  border-top-width: max(1px,calc(var(--peek-y) * 4px)); border-bottom-width: max(1px,calc(var(--peek-y) * -4px));
-  transform: translate(calc(var(--peek-x) * var(--edge) * -6px),calc(var(--peek-y) * var(--edge) * -6px)); box-shadow: 0 0 2px #130b1b55;
+  border-left-width: max(.5px,calc(var(--peek-x) * 1.2px)); border-right-width: max(.5px,calc(var(--peek-x) * -1.2px));
+  border-top-width: max(.5px,calc(var(--peek-y) * 1.2px)); border-bottom-width: max(.5px,calc(var(--peek-y) * -1.2px));
+  transform: translate(calc(var(--peek-x) * var(--edge) * -2.2px),calc(var(--peek-y) * var(--edge) * -2.2px)); box-shadow: 0 0 1px #130b1b44;
   transition: transform 260ms cubic-bezier(.18,.85,.25,1);
 }
 .tactile-stack[data-touching] .pack-peek-edges i { transition-duration: 60ms; }
@@ -5264,17 +5264,23 @@ body {
 .booster-carousel { width: min(1200px,100vw); text-align: center; position: relative; align-self: center; padding: 12px 0 20px; }
 .carousel-heading { position: relative; z-index: 1; pointer-events: none; }
 .carousel-heading small { color: var(--ui-yellow); font: 700 14px/1.4 monospace; letter-spacing: .13em; }
-.carousel-heading h1 { font: italic 900 clamp(32px,4vw,56px)/.94 Impact,sans-serif; color: var(--ui-cream); margin: 10px 0 0; }
+.carousel-heading h1 { font: italic 900 clamp(26px,3vw,40px)/1.1 Impact,sans-serif; color: var(--ui-cream); margin: 10px 0 0; }
 .carousel-heading em { color: var(--ui-pink); font-style: inherit; }
-.carousel-ring { --radius: min(38vw,420px); position: relative; height: clamp(230px,40svh,410px); perspective: 1100px; touch-action: pan-y; user-select: none; -webkit-user-select: none; cursor: grab; }
+.carousel-ring { --radius: min(62vw,640px); --spin-lean: 0deg; position: relative; height: clamp(285px,46svh,460px); perspective: 1200px; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: grab; }
+.carousel-ring * { touch-action: none; -webkit-user-drag: none; }
 .carousel-ring:active { cursor: grabbing; }
 .carousel-floor { position: absolute; inset: 55% 8% -12%; background: radial-gradient(ellipse,#f947a029,transparent 65%); transform: rotateX(60deg); border: 1px solid #b88ab330; border-radius: 50%; pointer-events: none; }
-.mode-altar .carousel-pack { position: absolute; top: 51%; left: 50%; width: clamp(140px,19vw,230px); aspect-ratio: 2/3; padding: 0; border: 0; background: none; box-shadow: none; border-radius: 0; cursor: grab;
-  transform: translate(-50%,-50%) translate3d(calc(var(--ring-x) * var(--radius)),calc(var(--ring-depth) * 35px),calc(var(--ring-depth) * var(--radius))) rotateY(var(--ring-turn));
+.mode-altar .carousel-pack { position: absolute; top: 60%; left: 50%; width: clamp(125px,16vw,190px); aspect-ratio: 2/3; padding: 0; border: 0; background: none; box-shadow: none; border-radius: 0; cursor: grab;
+  transform: translate(-50%,-50%) translate3d(calc(var(--ring-x) * var(--radius)),calc(var(--ring-depth) * 110px),calc(var(--ring-depth) * var(--radius))) rotateY(var(--ring-turn)) rotateZ(var(--spin-lean));
   filter: brightness(var(--pack-light)); transition: none; will-change: transform;
 }
 .carousel-wrapper { display: block; position: absolute; inset: 0; overflow: hidden; background: #6b2855; border: 2px solid #c898cf; box-shadow: 3px 10px 20px #05020980; clip-path: polygon(0 0,100% 0,98% 3%,100% 6%,98% 9%,100% 12%,100% 88%,98% 91%,100% 94%,98% 97%,100% 100%,0 100%,2% 97%,0 94%,2% 91%,0 88%,0 12%,2% 9%,0 6%,2% 3%); }
 .carousel-wrapper > img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.carousel-float { position: absolute; inset: 0; pointer-events: none; animation: booster-float 3.8s ease-in-out var(--float-delay) infinite alternate; }
+@keyframes booster-float { from { transform: translateY(-4px) rotate(-.7deg); } to { transform: translateY(4px) rotate(.7deg); } }
+.carousel-ring[data-dragging] .carousel-float { animation-play-state: paused; }
+.carousel-reflection { position: absolute; top: calc(100% + 10px); height: 48%; width: 100%; left: 0; overflow: hidden; opacity: .13; pointer-events: none; mask-image: linear-gradient(#000,transparent 85%); -webkit-mask-image: linear-gradient(#000,transparent 85%); }
+.carousel-reflection img { display: block; width: 100%; transform: scaleY(-1); margin-top: -78%; }
 .carousel-foil { position: absolute; inset: 0; background: linear-gradient(110deg,#ffd38a33,transparent 35%,#ff78c533 65%,#20112788),linear-gradient(0deg,#15091fe8,transparent 45%,#15091faa); pointer-events: none; }
 .carousel-wrapper::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg,#fff6 0 1px,#36102788 1px 3px,transparent 3px 5px); clip-path: polygon(0 0,100% 0,100% 5%,0 5%,0 95%,100% 95%,100% 100%,0 100%); }
 .carousel-title { position: absolute; top: 9%; left: 8%; text-align: left; color: #fff4cf; font: italic 900 clamp(25px,3.5vw,42px)/.88 Impact,sans-serif; text-shadow: 2px 2px #38102e; }
@@ -5293,11 +5299,11 @@ body {
 @keyframes carousel-pick { to { transform: translateY(-12px) scale(1.15); filter: brightness(1.15); } }
 @media (max-width:700px) {
   .booster-carousel { padding: 0 0 14px; }
-  .carousel-ring { --radius: 62vw; height: clamp(215px,36svh,320px); }
-  .mode-altar .carousel-pack { width: min(46vw,calc((100svh - 370px) * .67)); min-width: 126px; }
-  .carousel-heading h1 { font-size: 34px; }
-  .carousel-title { font-size: 28px; }.carousel-edition { font-size: 23px; }
+  .carousel-ring { --radius: 90vw; height: clamp(270px,43svh,370px); }
+  .mode-altar .carousel-pack { width: min(34vw,calc((100svh - 360px) * .52)); min-width: 108px; }
+  .carousel-heading h1 { font-size: 28px; }
+  .carousel-title { font-size: 24px; }.carousel-edition { font-size: 20px; }
   .carousel-controls { margin-top: 0; gap: 24px; }
   .mode-altar .carousel-choose { font-size: 24px; padding-block: 14px; }
 }
-@media (prefers-reduced-motion:reduce) { .is-chosen .carousel-pack.is-front .carousel-wrapper { animation: none; } }
+@media (prefers-reduced-motion:reduce) { .carousel-float, .is-chosen .carousel-pack.is-front .carousel-wrapper { animation: none; } }

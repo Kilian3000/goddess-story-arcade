@@ -25,6 +25,19 @@ test("pack choice is cosmetic and opening remains the only draw", async () => {
   assert.match(carousel,/if \(chosen.current \|\| drag.current\) return/);
 });
 
+test("phone carousel owns touch immediately and ignores child capture loss", async () => {
+  const source = await readFile(new URL("../app/pack-carousel.tsx", import.meta.url),"utf8");
+  const css = await readFile(new URL("../app/globals.css", import.meta.url),"utf8");
+  const down = source.slice(source.indexOf("function down("), source.indexOf("function move("));
+  assert.match(down,/event.preventDefault\(\)/);
+  assert.match(down,/setPointerCapture\(event.pointerId\)/);
+  assert.match(source,/event.target === event.currentTarget && drag.current/);
+  assert.match(source,/else if \(g.packIndex !== null\)/);
+  assert.match(css,/\.carousel-ring \{[^}]*touch-action: none/);
+  assert.match(css,/\.carousel-ring \* \{ touch-action: none/);
+  assert.match(css,/booster-float/);
+});
+
 test("a slow swipe scales to the phone card width", () => {
   assert.equal(swipeIntent(-55, 3, 400, 240), 1);
   assert.equal(swipeIntent(55, 3, 400, 240), -1);
@@ -116,7 +129,7 @@ test("directional peeks wire both signed axes into tilt and edge translation", a
   assert.match(source, /current.phone \? phonePeekVector/);
   assert.match(source, /direction \? -direction.y \* 27 : amount \* 7/);
   assert.match(css, /rotateY\(calc\(var\(--peek-x\) \* 27deg\)\)/);
-  assert.match(css, /translate\(calc\(var\(--peek-x\) \* var\(--edge\) \* -6px\),calc\(var\(--peek-y\) \* var\(--edge\) \* -6px\)\)/);
+  assert.match(css, /translate\(calc\(var\(--peek-x\) \* var\(--edge\) \* -2\.2px\),calc\(var\(--peek-y\) \* var\(--edge\) \* -2\.2px\)\)/);
 });
 
 test("phone slow drags remain peeks even across the entire card", () => {

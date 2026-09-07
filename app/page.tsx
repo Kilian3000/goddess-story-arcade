@@ -539,7 +539,9 @@ export default function Home() {
       <section className="gacha-shell" aria-label={arcadeConfig.brandLabel}>
         <header className="gacha-header">
           <div className="header-left">
-            <button className="edge-control vault-trigger" aria-label="Booster-Auswahl öffnen" aria-expanded={showMenu} onClick={() => setShowMenu(true)} disabled={mode !== "altar" || Boolean(prizeLock)}><span className="hamburger"><i /><i /></span><b>BOOSTER MENU</b></button>
+            {mode === "altar" && phase === "sealed" && packChosen && !prizeLock
+              ? <button className="edge-control vault-trigger back-trigger" aria-label="Zurück zum Booster-Karussell" onClick={() => { setPackChosen(false); setTearProgress(0); }}><span aria-hidden="true">←</span><b>BACK</b></button>
+              : <button className="edge-control vault-trigger" aria-label="Booster-Auswahl öffnen" aria-expanded={showMenu} onClick={() => setShowMenu(true)} disabled={mode !== "altar" || Boolean(prizeLock)}><span className="hamburger"><i /><i /></span><b>BOOSTER MENU</b></button>}
           </div>
           <div className="wordmark" aria-label={arcadeConfig.brandLabel}>{arcadeConfig.brandLead}<span>{arcadeConfig.brandAccent}</span><small>{arcadeConfig.brandTagline}</small></div>
           <div className="header-actions">
@@ -607,13 +609,13 @@ export default function Home() {
                 <span className="pack-code">{selectedPack.setName}</span>
                 <span className="pack-edition">{selectedPack.cost} YUAN · {selectedPack.odds.cardsPerPack} CARDS</span>
                 </span>)}
-                <span className="tear-handle"><i /><b>SLIDE TO RIP →</b></span>
+                <span className="tear-handle"><i /><b aria-hidden="true">← ✦ →</b></span>
               </button>
               <aside className="pack-side pack-side-right" aria-label="Selected booster profile">
                 <img src={rivalMuse.image} alt="" />
                 <div className="pack-profile-copy"><small>BOOSTER PROFILE</small><b>{selectedPack.setName}</b><strong>{selectedPack.odds.cardsPerPack}<i>CARDS</i></strong><p>{recipe?.pattern || `${selectedPack.cost} Yuan pack`}</p><em>FEAT. {rivalMuse.character}</em></div>
               </aside>
-              <p className="gesture-hint">Tear across the top <span>or tap to open</span>{phase === "sealed" && <button className="choose-again" onClick={() => { setPackChosen(false); setTearProgress(0); }}>Choose a different pack</button>}</p>
+              <p className="gesture-hint">Swipe the seam <span>or tap</span></p>
               {phase === "opening" && <p className="opening-copy"><span>✦</span> HERE WE GO</p>}
             </div>
           )}

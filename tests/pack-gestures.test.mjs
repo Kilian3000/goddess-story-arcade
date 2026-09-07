@@ -43,8 +43,13 @@ test("mobile removes redundant navigation and clears controls behind the pack me
   const css = await readFile(new URL("../app/globals.css", import.meta.url),"utf8");
   assert.match(page,/showMenu \? " menu-open" : ""/);
   assert.match(css,/\.mode-altar \.carousel-controls button \{ display: none; \}/);
+  assert.match(css,/\.mode-altar \.carousel-choose,[\s\S]*?\.mode-altar\.phase-sealed \.action-dock \{ display: none; \}/);
   assert.match(css,/\.mode-altar\.phase-revealing \.action-dock \{ display: none; \}/);
   assert.match(css,/\.mode-altar\.menu-open \.booster-carousel,[\s\S]*?visibility: hidden; pointer-events: none;/);
+  assert.match(page,/back-trigger/);
+  assert.match(page,/setPackChosen\(false\); setTearProgress\(0\)/);
+  assert.doesNotMatch(page,/Choose a different pack/);
+  assert.match(css,/background: color-mix\(in srgb,var\(--edge-color\) 72%,#ded5e2\)/);
 });
 
 test("a slow swipe scales to the phone card width", () => {

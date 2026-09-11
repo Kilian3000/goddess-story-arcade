@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 
 import { CAROUSEL_PACKS, carouselOffset, carouselRelease } from "./carousel-motion";
-type Props = { art: string; character: string; setName: string; cost: number; cards: number; onChoose: () => void; onTick: () => void };
+type Props = { art: string; setName: string; cost: number; cards: number; onChoose: () => void; onTick: () => void };
 
-export function PackCarousel({ art, character, setName, cost, cards, onChoose, onTick }: Props) {
+export function PackCarousel({ art, setName, cost, cards, onChoose, onTick }: Props) {
   const [position, setPosition] = useState(0);
   const [choosing, setChoosing] = useState(false);
   const ring = useRef<HTMLDivElement>(null);
@@ -78,7 +78,7 @@ export function PackCarousel({ art, character, setName, cost, cards, onChoose, o
   }
   const selected = ((Math.round(position) % CAROUSEL_PACKS) + CAROUSEL_PACKS) % CAROUSEL_PACKS;
   return <section className={`booster-carousel ${choosing ? "is-chosen" : ""}`} aria-label="Choose a booster from the carousel">
-    <div className="carousel-heading"><small>{setName} · {cost} YUAN</small><h1>CHOOSE YOUR PACK</h1></div>
+    <div className="carousel-heading"><small>{CAROUSEL_PACKS} PACKS · {cost} YUAN</small><h1>CHOOSE YOUR PACK</h1></div>
     <div className="carousel-ring" ref={ring} onPointerDown={down} onPointerMove={move} onPointerUp={event => up(event)} onPointerCancel={event => up(event, true)} onLostPointerCapture={event => { if (event.target === event.currentTarget && drag.current) up(event, true); }} onDragStart={event => event.preventDefault()} onContextMenu={event => event.preventDefault()}>
       <div className="carousel-floor" aria-hidden="true" />
       {Array.from({ length: CAROUSEL_PACKS }, (_, index) => {
@@ -88,12 +88,11 @@ export function PackCarousel({ art, character, setName, cost, cards, onChoose, o
         } as CSSProperties} onClick={event => { if (event.detail !== 0 || suppress.current) { suppress.current = false; return; } if (selected === index) choose(); else settle(current.current + offset); }} onKeyDown={event => {
           if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); settle(Math.round(current.current) + (event.key === "ArrowRight" ? 1 : -1)); }
         }}>
-          <span className="carousel-reflection" aria-hidden="true"><img src={art} alt="" draggable={false} /></span><span className="carousel-float"><span className="carousel-wrapper"><img src={art} alt="" draggable={false} /><span className="carousel-foil" /><span className="carousel-title">GODDESS<br /><b>STORY</b></span><span className="carousel-edition">{setName}<small>{cards} CARDS · {character}</small></span></span></span>
+          <span className="carousel-reflection" aria-hidden="true"><img src={art} alt="" draggable={false} /></span><span className="carousel-float"><span className="carousel-wrapper"><img src={art} alt="" draggable={false} /><span className="carousel-foil" /><span className="carousel-title">GODDESS<br /><b>STORY</b></span><span className="carousel-edition">{setName}<small>{cards} CARDS</small></span></span></span>
         </button>;
       })}
     </div>
     <div className="carousel-controls"><button onClick={() => settle(Math.round(current.current) - 1)} disabled={choosing} aria-label="Rotate packs left">←</button><span aria-live="polite">{String(selected + 1).padStart(2,"0")} <i>/ {CAROUSEL_PACKS}</i></span><button onClick={() => settle(Math.round(current.current) + 1)} disabled={choosing} aria-label="Rotate packs right">→</button></div>
     <button className="carousel-choose" onClick={choose} disabled={choosing}>{choosing ? "THIS IS THE ONE" : "PICK THIS PACK"} <span>↗</span></button>
-    <p className="carousel-note">Swipe to browse. Same set, same odds.</p>
   </section>;
 }

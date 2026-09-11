@@ -96,12 +96,12 @@ export default function CollectionPage() {
   }, [owned]);
 
   return (
-    <ArcadeChrome watermark="BINDER" balanceFen={state.balanceFen} vouchers={state.vouchers}>
+    <ArcadeChrome watermark="BINDER" activeSection="collection" balanceFen={state.balanceFen} vouchers={state.vouchers}>
       <div className="economy-body collection-body">
         <header className="economy-heading">
           <span>02 · BINDER</span>
           <h1>Sammlung</h1>
-          <p>Karten nach Set, Pack-Linie und Rarity. Verkaufen oder Doppelte tauschen.</p>
+          <p>Karten, Werte und Doppelte auf einen Blick.</p>
         </header>
 
         {!catalogReady && dbStatus !== "error" && catalogStatus !== "error" && (
@@ -170,46 +170,56 @@ export default function CollectionPage() {
               </label>
             </section>
 
-            {byRarity.length > 0 && (
-              <section className="collection-breakdown" aria-label="Wert nach Rarity">
-                {byRarity.map(([rarity, row]) => (
-                  <div key={rarity} style={{ "--chip": rarityColor(rarity) } as CSSProperties}>
-                    <b>{rarity}</b>
-                    <span>{row.count} · {formatYuan(row.valueFen)} ¥</span>
-                  </div>
-                ))}
-              </section>
-            )}
-
-            {bySet.length > 0 && (
-              <section className="collection-sets" aria-label="Wert nach Set">
-                {bySet.map(([name, row]) => (
-                  <div key={name}>
-                    <b>{name}</b>
-                    <span>{groupLabels[row.group] || row.group || "Set"} · {row.unique} unique · {row.count} karten</span>
-                    <em>{formatYuan(row.valueFen)} ¥</em>
-                  </div>
-                ))}
-              </section>
-            )}
-
             {filtered.length === 0 ? (
               <p className="collection-empty">{owned.length ? "Keine Karten für diesen Filter." : <>Noch keine Karten. <Link href="/">Öffne ein Pack</Link> in der Arcade.</>}</p>
             ) : (
-              <ul className="collection-grid">
-                {filtered.map(({ card, count, valueFen: value, pack }) => (
-                  <li key={card.id} style={{ "--card-color": rarityColor(card.rarity) } as CSSProperties}>
-                    <img src={cardAsset(card.image_path)} alt={`${card.rarity} ${card.character}`} />
-                    <div>
-                      <b style={{ color: rarityColor(card.rarity) }}>{card.rarity}</b>
-                      <strong>{card.character || "Unknown"}</strong>
-                      <small>{card.set_name} · {card.number} · {groupLabels[pack?.group || ""] || pack?.group || "Set"}</small>
-                      <em>×{count} · {formatYuan(value)} ¥</em>
-                    </div>
-                    <button onClick={() => sell(card.id, value)}>Verkaufen</button>
-                  </li>
-                ))}
-              </ul>
+              <section className="collection-results" aria-label="Kartensammlung">
+                <header><b>DEINE KARTEN</b><span>{filtered.length} / {unique}</span></header>
+                <ul className="collection-grid">
+                  {filtered.map(({ card, count, valueFen: value, pack }) => (
+                    <li key={card.id} style={{ "--card-color": rarityColor(card.rarity) } as CSSProperties}>
+                      <div className="collection-card-art">
+                        <img src={cardAsset(card.image_path)} alt={`${card.rarity} ${card.character}`} />
+                        <b style={{ color: rarityColor(card.rarity) }}>{card.rarity}</b>
+                        <span>×{count}</span>
+                      </div>
+                      <div className="collection-card-copy">
+                        <strong>{card.character || "Unknown"}</strong>
+                        <small>{card.set_name} · {card.number}</small>
+                        <em>{groupLabels[pack?.group || ""] || pack?.group || "Set"}</em>
+                      </div>
+                      <button onClick={() => sell(card.id, value)}>SELL · {formatYuan(value)} ¥</button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {(byRarity.length > 0 || bySet.length > 0) && (
+              <section className="collection-ledger" aria-label="Sammlungswerte">
+                <header><b>WERTÜBERSICHT</b><span>nach Rarity und Set</span></header>
+                {byRarity.length > 0 && (
+                  <div className="collection-breakdown" aria-label="Wert nach Rarity">
+                    {byRarity.map(([rarity, row]) => (
+                      <div key={rarity} style={{ "--chip": rarityColor(rarity) } as CSSProperties}>
+                        <b>{rarity}</b>
+                        <span>{row.count} · {formatYuan(row.valueFen)} ¥</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {bySet.length > 0 && (
+                  <div className="collection-sets" aria-label="Wert nach Set">
+                    {bySet.map(([name, row]) => (
+                      <div key={name}>
+                        <b>{name}</b>
+                        <span>{groupLabels[row.group] || row.group || "Set"} · {row.unique} unique · {row.count} Karten</span>
+                        <em>{formatYuan(row.valueFen)} ¥</em>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
             )}
           </>
         )}

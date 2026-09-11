@@ -24,9 +24,11 @@ test("server-renders the Goddess Story gacha shell", async () => {
   assert.match(html, /aria-label="GODDESS\.STORY CARD ARCADE"/);
   assert.match(html, /GODDESS<span>\.STORY<\/span>/);
   assert.match(html, /Goddess-Story-Archiv wird geladen/);
-  assert.match(html, /BOOSTER MENU/);
-  assert.match(html, /0X/);
-  assert.match(html, /MINIGAMES/);
+  assert.match(html, /aria-label="Booster-Auswahl öffnen"/);
+  assert.match(html, /aria-label="Spielmodus"/);
+  assert.match(html, /<b>PACKS<\/b>/);
+  assert.match(html, /<b>GAMES<\/b>/);
+  assert.match(html, /<b>CARDS<\/b>/);
   assert.doesNotMatch(html, /Your site is taking shape|react-loading-skeleton/);
 });
 

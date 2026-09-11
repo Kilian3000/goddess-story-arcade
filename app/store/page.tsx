@@ -17,7 +17,7 @@ export default function StorePage() {
   };
 
   return (
-    <ArcadeChrome watermark="STORE" balanceFen={state.balanceFen} vouchers={state.vouchers}>
+    <ArcadeChrome watermark="STORE" activeSection="store" balanceFen={state.balanceFen} vouchers={state.vouchers}>
       <div className="economy-body store-body">
         <header className="economy-heading">
           <span>STORE · SIMULATION</span>

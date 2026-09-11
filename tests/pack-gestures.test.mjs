@@ -142,6 +142,7 @@ test("directional peeks wire both signed axes into tilt and edge translation", a
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
   assert.match(source, /current.phone \? phonePeekVector/);
   assert.match(source, /direction \? -direction.y \* 27 : amount \* 7/);
+  assert.match(css, /\.pack-scene \{[^}]*transform-origin: 50% 50%/s);
   assert.match(css, /rotateY\(calc\(var\(--peek-x\) \* 27deg\)\)/);
   assert.match(css, /translate\(calc\(var\(--peek-x\) \* var\(--edge\) \* -2\.8px\),calc\(var\(--peek-y\) \* var\(--edge\) \* -2\.8px\)\)/);
 });

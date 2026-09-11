@@ -49,6 +49,7 @@ import {
 import { useCardCatalog } from "./use-card-catalog";
 import { useEconomy } from "./use-economy";
 import { useGachaAudio } from "./use-gacha-audio";
+import { AppIcon } from "./ui-icons";
 import { WalletChip } from "./wallet-chip";
 
 type Phase = "sealed" | "opening" | "revealing" | "summary";
@@ -170,6 +171,7 @@ export default function Home() {
   const inputLock = useRef(false);
   const revealedRef = useRef(-1);
   const navigationTimer = useRef<number | null>(null);
+  const experienceRef = useRef<HTMLDivElement | null>(null);
   const {
     muted,
     musicEnabled,
@@ -242,6 +244,11 @@ export default function Home() {
   const canAfford = selectedPack ? canOpenPack(economy, selectedPack.cost) : false;
   const usingVoucher = selectedPack ? Boolean(voucherForCost(selectedPack.cost) && economy.vouchers[voucherForCost(selectedPack.cost)!] > 0) : false;
   const packValueFen = pack.reduce((sum, card) => sum + valueFen(card.id, card.rarity), 0);
+  const packCostFen = (selectedPack?.cost ?? 0) * 100;
+  const packNetFen = packValueFen - packCostFen;
+  const bestPull = pack.length
+    ? pack.reduce((best, card) => rarityTier(card.rarity) > rarityTier(best.rarity) ? card : best)
+    : null;
   const canChangeSet = mode === "altar" && !prizeLock && (phase === "sealed" || phase === "summary");
   const palette = groupClass(selectedPack?.group);
   const groupOptions = [...new Set(catalog.map((item) => item.group))];
@@ -308,6 +315,12 @@ export default function Home() {
     }
     navigateCard(activeIndex + 1);
   }, [activeIndex, navigateCard, pack, playSummary]);
+
+  useEffect(() => {
+    if (phase !== "summary") return;
+    const frame = window.requestAnimationFrame(() => experienceRef.current?.scrollTo({ top: 0, left: 0 }));
+    return () => window.cancelAnimationFrame(frame);
+  }, [phase]);
 
   const previousCard = useCallback(() => {
     if (activeIndex > 0) navigateCard(activeIndex - 1);
@@ -530,26 +543,26 @@ export default function Home() {
         <header className="gacha-header">
           <div className="header-left">
             {mode === "altar" && phase === "sealed" && packChosen && !prizeLock
-              ? <button className="edge-control vault-trigger back-trigger" aria-label="Zurück zum Booster-Karussell" onClick={() => { setPackChosen(false); setTearProgress(0); }}><span aria-hidden="true">←</span><b>BACK</b></button>
-              : <button className="edge-control vault-trigger" aria-label="Booster-Auswahl öffnen" aria-expanded={showMenu} onClick={() => setShowMenu(true)} disabled={mode !== "altar" || Boolean(prizeLock)}><span className="hamburger"><i /><i /></span><b>BOOSTER MENU</b></button>}
+              ? <button className="edge-control vault-trigger back-trigger" aria-label="Zurück zum Booster-Karussell" onClick={() => { setPackChosen(false); setTearProgress(0); }}><span className="edge-icon"><AppIcon name="back" /></span><b>BACK</b></button>
+              : <button className="edge-control vault-trigger" aria-label="Booster-Auswahl öffnen" aria-expanded={showMenu} onClick={() => setShowMenu(true)} disabled={mode !== "altar" || Boolean(prizeLock)}><span className="edge-icon"><AppIcon name="menu" /></span><b>BOOSTERS</b></button>}
           </div>
           <div className="wordmark" aria-label={arcadeConfig.brandLabel}>{arcadeConfig.brandLead}<span>{arcadeConfig.brandAccent}</span><small>{arcadeConfig.brandTagline}</small></div>
           <div className="header-actions">
-            <button className="edge-control music-control" aria-label={musicEnabled ? "Musik ausschalten" : "Musik einschalten"} aria-pressed={musicEnabled} onClick={() => void toggleMusic()}><span>♫</span><b>{musicEnabled ? "MUSIC ON" : "MUSIC OFF"}</b></button>
-            <button className="edge-control sound-control" aria-label={muted ? "Sound einschalten" : "Sound ausschalten"} aria-pressed={!muted} onClick={() => void toggleMuted()}><span>{muted ? "◇" : "◈"}</span><b>{muted ? "SOUND OFF" : "SOUND ON"}</b></button>
-            <button className="edge-control" onClick={() => setShowInfo(true)} disabled={!selectedPack}><span>◎</span><b>PULL RATES</b></button>
-            <Link className="edge-control" href="/store"><span>¥</span><b>STORE</b></Link>
+            <button className="edge-control music-control" aria-label={musicEnabled ? "Musik ausschalten" : "Musik einschalten"} aria-pressed={musicEnabled} onClick={() => void toggleMusic()}><span className="edge-icon"><AppIcon name="music" /></span><b>{musicEnabled ? "MUSIC ON" : "MUSIC OFF"}</b></button>
+            <button className="edge-control sound-control" aria-label={muted ? "Sound einschalten" : "Sound ausschalten"} aria-pressed={!muted} onClick={() => void toggleMuted()}><span className="edge-icon"><AppIcon name="sound" /></span><b>{muted ? "SOUND OFF" : "SOUND ON"}</b></button>
+            <button className="edge-control" onClick={() => setShowInfo(true)} disabled={!selectedPack}><span className="edge-icon"><AppIcon name="odds" /></span><b>ODDS</b></button>
             <WalletChip balanceFen={economy.balanceFen} fromFen={walletFromFen} vouchers={economy.vouchers} animating={walletAnimating} />
           </div>
         </header>
 
         <nav className="experience-switch" aria-label="Spielmodus">
-          <button className={mode === "altar" ? "is-active" : ""} onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); switchMode("altar"); } }} onClick={(event) => { if (event.detail === 0) switchMode("altar"); }} disabled={phase === "opening" || phase === "revealing" || Boolean(prizeLock)}><span>01</span><b>OPEN PACKS</b><small>pick your poison</small></button>
-          <button className={mode === "games" ? "is-active" : ""} onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); switchMode("games"); } }} onClick={(event) => { if (event.detail === 0) switchMode("games"); }} disabled={phase === "opening" || phase === "revealing" || Boolean(prizeLock)}><span>0X</span><b>MINIGAMES</b><small>tables &amp; side bets</small><i>NEW</i></button>
-          <button className="collection-nav" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); if (phase !== "opening" && phase !== "revealing") window.location.assign("/collection"); } }} onClick={(event) => { if (event.detail === 0 && phase !== "opening" && phase !== "revealing") window.location.assign("/collection"); }} disabled={phase === "opening" || phase === "revealing"}><span>02</span><b>COLLECTION</b><small>binder &amp; trades</small></button>
+          <button className={mode === "altar" ? "is-active" : ""} onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); switchMode("altar"); } }} onClick={(event) => { if (event.detail === 0) switchMode("altar"); }} disabled={phase === "opening" || phase === "revealing" || Boolean(prizeLock)}><span><AppIcon name="pack" /></span><b>PACKS</b><small>open</small></button>
+          <button className={mode === "games" ? "is-active" : ""} onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); switchMode("games"); } }} onClick={(event) => { if (event.detail === 0) switchMode("games"); }} disabled={phase === "opening" || phase === "revealing" || Boolean(prizeLock)}><span><AppIcon name="games" /></span><b>GAMES</b><small>play</small></button>
+          <button className="collection-nav" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); if (phase !== "opening" && phase !== "revealing") window.location.assign("/collection"); } }} onClick={(event) => { if (event.detail === 0 && phase !== "opening" && phase !== "revealing") window.location.assign("/collection"); }} disabled={phase === "opening" || phase === "revealing"}><span><AppIcon name="collection" /></span><b>CARDS</b><small>collect</small></button>
+          <Link className="store-nav" href="/store"><span><AppIcon name="store" /></span><b>STORE</b><small>yuan</small></Link>
         </nav>
 
-        <div className="experience" aria-live="polite">
+        <div ref={experienceRef} className="experience" aria-live="polite">
           {!dataReady && dbStatus !== "error" && catalogStatus !== "error" && <div className="loading-state"><span className="loader-sigil" />Goddess-Story-Archiv wird geladen…</div>}
           {(dbStatus === "error" || catalogStatus === "error") && <div className="error-card"><b>Archiv nicht erreichbar</b><span>Pack- oder Kartendaten konnten nicht geladen werden.</span></div>}
           {generationError && <div className="generation-error">{generationError}</div>}
@@ -575,7 +588,7 @@ export default function Home() {
             />
           )}
 
-          {mode === "altar" && selectedPack && dataReady && phase === "sealed" && !packChosen && <PackCarousel key={selectedPack.setName} art={packMuse.image} character={packMuse.character} setName={selectedPack.setName} cost={selectedPack.cost} cards={selectedPack.odds.cardsPerPack} onTick={() => { void playUiTap(); packHaptic(); }} onChoose={() => { setPackChosen(true); void startMusic(); }} />}
+          {mode === "altar" && selectedPack && dataReady && phase === "sealed" && !packChosen && <PackCarousel key={selectedPack.setName} art={packMuse.image} setName={selectedPack.setName} cost={selectedPack.cost} cards={selectedPack.odds.cardsPerPack} onTick={() => { void playUiTap(); packHaptic(); }} onChoose={() => { setPackChosen(true); void startMusic(); }} />}
 
           {mode === "altar" && selectedPack && packChosen && (phase === "sealed" || phase === "opening") && (
             <div className="pack-presentation">
@@ -624,7 +637,16 @@ export default function Home() {
 
           {mode === "altar" && phase === "summary" && pack.length > 0 && (
             <div className="pack-summary">
-              <div className="summary-heading"><span>BOOSTER COMPLETE · {pack.length} CARDS</span><h1>{selectedPack?.setName}</h1><p>Best pull: {pack.reduce((best, card) => rarityTier(card.rarity) > rarityTier(best.rarity) ? card : best).rarity} · {pack.reduce((best, card) => rarityTier(card.rarity) > rarityTier(best.rarity) ? card : best).character}</p><strong className="summary-value-line">Pull {formatYuan(packValueFen)} ¥ · Pack {selectedPack?.cost ?? 0} ¥</strong></div>
+              <div className="summary-heading">
+                <span>BOOSTER COMPLETE · {pack.length} CARDS</span>
+                <h1>{selectedPack?.setName}</h1>
+                <p>BEST PULL <b style={{ color: rarityColor(bestPull?.rarity || "R") }}>{bestPull?.rarity}</b><em>{bestPull?.character}</em></p>
+                <div className="summary-value-line">
+                  <span><small>TOTAL VALUE</small><b>{formatYuan(packValueFen)} ¥</b></span>
+                  <span><small>PACK COST</small><b>{formatYuan(packCostFen)} ¥</b></span>
+                  <span className={packNetFen >= 0 ? "is-profit" : "is-loss"}><small>NET</small><b>{packNetFen > 0 ? "+" : ""}{formatYuan(packNetFen)} ¥</b></span>
+                </div>
+              </div>
               <div className={`summary-grid summary-${pack.length}`}>
                 {pack.map((card, index) => (
                   <div key={`${card.id}-${index}`} className="summary-slot" style={{ "--card-color": rarityColor(card.rarity), "--delay": `${index * 45}ms` } as CSSProperties}>
@@ -638,19 +660,20 @@ export default function Home() {
                   </div>
                 ))}
               </div>
+              <button className="primary-action summary-footer-action" onClick={prizeLock ? returnToGame : resetForAnother}><span>{prizeLock ? `BACK TO ${prizeReturnTitle}` : "OPEN ANOTHER"}</span><i><AppIcon name={prizeLock ? "back" : "replay"} /></i></button>
             </div>
           )}
         </div>
 
-        {mode === "altar" && selectedPack && (
+        {mode === "altar" && selectedPack && (packChosen || phase !== "sealed") && (
           <div className={`set-anchor ${prizeLock ? "is-prize" : ""}`}><span className="anchor-kicker">{prizeLock ? `${prizeReturnTitle} PRIZE · LOCKED` : "SELECTED BOOSTER"}</span><button onClick={() => canChangeSet ? setShowMenu(true) : setShowInfo(true)}><b>{selectedPack.setName}</b><span>{groupLabels[selectedPack.group] || selectedPack.group} · {selectedPack.odds.cardsPerPack} cards</span></button><small>{opened.toLocaleString("de-DE")} packs opened</small></div>
         )}
         {mode === "altar" && (phase !== "sealed" || packChosen) && <div className="action-dock">
           {phase === "sealed" && !canAfford && <p className="funds-hint">Nicht genug Yuan · <Link href="/store">Store</Link></p>}
-          {phase === "sealed" && <button className="primary-action" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); void openPack(); } }} onClick={(event) => { if (event.detail === 0) void openPack(); }} disabled={!dataReady || !canAfford}><span>{usingVoucher ? "RIP WITH VOUCHER" : "RIP THIS BOOSTER"}<small>{selectedPack ? `${selectedPack.cost} ¥` : ""}</small></span><i>↗</i></button>}
+          {phase === "sealed" && <button className="primary-action" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); void openPack(); } }} onClick={(event) => { if (event.detail === 0) void openPack(); }} disabled={!dataReady || !canAfford}><span>{usingVoucher ? "RIP WITH VOUCHER" : "RIP THIS BOOSTER"}<small>{selectedPack ? `${selectedPack.cost} ¥` : ""}</small></span><i><AppIcon name="pack" /></i></button>}
           {phase === "opening" && <div className="opening-meter"><i /><span>DEALING YOUR CARDS</span></div>}
-          {phase === "revealing" && <button className="primary-action next-action" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); nextCard(); } }} onClick={(event) => { if (event.detail === 0) nextCard(); }}><span>{activeIndex === pack.length - 1 ? "SHOW FULL PACK" : "NEXT CARD"}<small>{activeIndex + 1} / {pack.length}</small></span><i>→</i></button>}
-          {phase === "summary" && <button className="primary-action" onClick={prizeLock ? returnToGame : resetForAnother}><span>{prizeLock ? `BACK TO ${prizeReturnTitle}` : "OPEN ANOTHER"}</span><i>{prizeLock ? "←" : "↻"}</i></button>}
+          {phase === "revealing" && <button className="primary-action next-action" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); nextCard(); } }} onClick={(event) => { if (event.detail === 0) nextCard(); }}><span>{activeIndex === pack.length - 1 ? "SHOW FULL PACK" : "NEXT CARD"}<small>{activeIndex + 1} / {pack.length}</small></span><i><AppIcon name="arrow" /></i></button>}
+          {phase === "summary" && <button className="primary-action" onClick={prizeLock ? returnToGame : resetForAnother}><span>{prizeLock ? `BACK TO ${prizeReturnTitle}` : "OPEN ANOTHER"}</span><i><AppIcon name={prizeLock ? "back" : "replay"} /></i></button>}
         </div>}
 
         {mode === "altar" && active && phase === "revealing" && inspectorOpen && (

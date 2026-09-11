@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { Card } from "../card-types";
 import type { PackConfig } from "../gacha-engine";
 import type { WaifuMuse } from "../lucky-shrine";
 import { LuckyShrine } from "../lucky-shrine";
 import { TemptationDuel } from "../temptation-duel";
 import { useEconomy } from "../use-economy";
+import { AppIcon, MINIGAME_ICONS } from "../ui-icons";
 import { CoinflipTable } from "./coinflip";
 import { CrashTable } from "./crash";
 import { JackpotTable } from "./jackpot";
@@ -53,6 +54,8 @@ export function MinigameHub({
   playStart,
   playLoss,
 }: Props) {
+  const railRef = useRef<HTMLElement | null>(null);
+  const activeGameRef = useRef<HTMLButtonElement | null>(null);
   const { state, valueFen, spend, credit, takeCards, grantCards } = useEconomy();
   const byId = useMemo(() => new Map(allCards.map((card) => [card.id, card])), [allCards]);
   const rows = useMemo<StakeCard[]>(() => (
@@ -74,9 +77,20 @@ export function MinigameHub({
   };
   const cards = { rows, catalog: allCards, valueFen, takeCards, grantCards, onPulse, playUiTap, playWin, playLoss };
 
+  useEffect(() => {
+    const rail = railRef.current;
+    const active = activeGameRef.current;
+    if (!rail || !active || !window.matchMedia("(max-width: 700px)").matches) return;
+    const frame = window.requestAnimationFrame(() => {
+      const left = active.offsetLeft - (rail.clientWidth - active.offsetWidth) / 2;
+      rail.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeGame]);
+
   return (
     <div className="minigame-hub">
-      <nav className="minigame-rail" aria-label="Minispiele">
+      <nav ref={railRef} className="minigame-rail" aria-label="Minispiele">
         {MINIGAME_GROUPS.map((group) => (
           <div key={group.id} className={`minigame-rail-group kind-${group.id}`}>
             <small>{group.label}</small>
@@ -86,10 +100,12 @@ export function MinigameHub({
               return (
                 <button
                   key={id}
+                  ref={activeGame === id ? activeGameRef : undefined}
                   type="button"
                   className={activeGame === id ? "is-active" : ""}
                   onClick={() => { void playUiTap(); onSelectGame(id); }}
                 >
+                  <i><AppIcon name={MINIGAME_ICONS[game.id]} /></i>
                   <b>{game.title}</b>
                   <span>{game.blurb}</span>
                 </button>

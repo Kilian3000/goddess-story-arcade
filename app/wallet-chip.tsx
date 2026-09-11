@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { formatYuan } from "./economy";
+import { AppIcon } from "./ui-icons";
 
 type Props = {
   balanceFen: number;
@@ -41,7 +42,7 @@ export function WalletChip({ balanceFen, fromFen, vouchers, animating = false }:
 
   return (
     <Link className={`edge-control wallet-chip${animating ? " is-animating" : ""}`} href="/store" aria-live="polite" aria-label={`Guthaben ${formatYuan(shown)} Yuan, Store öffnen`}>
-      <span>¥</span>
+      <span className="edge-icon"><AppIcon name="wallet" /></span>
       <b>{formatYuan(shown)} ¥</b>
       {voucherBits ? <small>{voucherBits}</small> : null}
     </Link>

@@ -25,8 +25,8 @@ test("server-renders the Goddess Story gacha shell", async () => {
   assert.match(html, /GODDESS<span>\.STORY<\/span>/);
   assert.match(html, /Goddess-Story-Archiv wird geladen/);
   assert.match(html, /BOOSTER MENU/);
-  assert.match(html, /WAIFU 21/);
-  assert.match(html, /HEARTLOCK/);
+  assert.match(html, /0X/);
+  assert.match(html, /MINIGAMES/);
   assert.doesNotMatch(html, /Your site is taking shape|react-loading-skeleton/);
 });
 
@@ -53,8 +53,10 @@ test("ships the verified Goddess Story pack catalog", async () => {
   assert.match(config, /NEXT_PUBLIC_CARD_DATABASE_URL/);
   assert.match(config, /NEXT_PUBLIC_CARD_IMAGE_ROOT/);
   assert.match(page, /images\/cards\/NS-05-M05\/XR-114\.webp/);
-  assert.match(page, /LuckyShrine/);
-  assert.match(page, /TemptationDuel/);
+  assert.match(page, /MinigameHub/);
+  const registry = await readFile(new URL("../app/minigames/registry.ts", import.meta.url), "utf8");
+  assert.match(registry, /WAIFU 21/);
+  assert.match(registry, /HEARTLOCK/);
   assert.match(page, /window\.localStorage/);
   assert.doesNotMatch(page, /arcade-hostess\.png/);
   const privateBrand = new RegExp(["hen", "tai"].join(""), "i");

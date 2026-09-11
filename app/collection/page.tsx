@@ -13,6 +13,8 @@ export default function CollectionPage() {
   const { allCards, catalog, catalogReady, dbStatus, catalogStatus } = useCardCatalog();
   const { state, valueFen, sell, trade } = useEconomy();
   const [query, setQuery] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [sort, setSort] = useState("value");
   const [setFilter, setSetFilter] = useState("all");
   const [groupFilter, setGroupFilter] = useState("all");
   const [rarityFilter, setRarityFilter] = useState("all");
@@ -55,11 +57,11 @@ export default function CollectionPage() {
         row.card.rarity,
       ].some((value) => value?.toLowerCase().includes(needle));
     }).sort((left, right) => (
-      right.valueFen - left.valueFen
+      (sort === "name" ? (left.card.character || "").localeCompare(right.card.character || "") : sort === "copies" ? right.count - left.count : right.valueFen - left.valueFen)
       || left.card.set_name.localeCompare(right.card.set_name)
       || left.card.number.localeCompare(right.card.number)
     ));
-  }, [dupesOnly, groupFilter, owned, query, rarityFilter, setFilter]);
+  }, [dupesOnly, groupFilter, owned, query, rarityFilter, setFilter, sort]);
 
   const unique = owned.length;
   const total = owned.reduce((sum, row) => sum + row.count, 0);
@@ -120,7 +122,7 @@ export default function CollectionPage() {
               <div><small>Geöffnet</small><b>{state.stats.packsOpened.toLocaleString("de-DE")}</b></div>
             </section>
 
-            <section className="trade-row" aria-label="Dupe-Tausch">
+            <details className="collection-trades"><summary>Doppelte tauschen <span>R {rExcess}/50 · SR {srExcess}/5</span></summary><section className="trade-row" aria-label="Dupe-Tausch">
               <button
                 className="trade-button"
                 disabled={rExcess < TRADE_RULES.R.excess}
@@ -139,10 +141,11 @@ export default function CollectionPage() {
                 <b>5 SR-Dupes → 2¥ Pack</b>
                 <span>{srExcess} / {TRADE_RULES.SR.excess} überschüssig</span>
               </button>
-            </section>
+            </section></details>
 
-            <section className="collection-filters">
+            <section className={`collection-filters${filtersOpen ? " is-expanded" : ""}`}>
               <input className="pack-search" type="search" placeholder="Charakter, Set, Nummer…" value={query} onChange={(event) => setQuery(event.target.value)} />
+              <div className="binder-toolbar"><button className={dupesOnly ? "is-active" : ""} aria-pressed={dupesOnly} onClick={() => setDupesOnly(!dupesOnly)}>Doppelte</button><button aria-expanded={filtersOpen} onClick={() => setFiltersOpen(!filtersOpen)}>Filter{[setFilter, groupFilter, rarityFilter].filter(v => v !== "all").length ? ` · ${[setFilter, groupFilter, rarityFilter].filter(v => v !== "all").length}` : ""} {filtersOpen ? "−" : "+"}</button><select aria-label="Karten sortieren" value={sort} onChange={event => setSort(event.target.value)}><option value="value">Wert ↓</option><option value="name">Name A–Z</option><option value="copies">Anzahl ↓</option></select></div>
               <label>
                 <span>Set</span>
                 <select value={setFilter} onChange={(event) => setSetFilter(event.target.value)}>
@@ -179,7 +182,7 @@ export default function CollectionPage() {
                   {filtered.map(({ card, count, valueFen: value, pack }) => (
                     <li key={card.id} style={{ "--card-color": rarityColor(card.rarity) } as CSSProperties}>
                       <div className="collection-card-art">
-                        <img src={cardAsset(card.image_path)} alt={`${card.rarity} ${card.character}`} />
+                        <img loading="lazy" src={cardAsset(card.image_path)} alt={`${card.rarity} ${card.character}`} />
                         <b style={{ color: rarityColor(card.rarity) }}>{card.rarity}</b>
                         <span>×{count}</span>
                       </div>

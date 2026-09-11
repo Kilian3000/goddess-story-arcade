@@ -71,7 +71,7 @@ export function RouletteTable({ balanceFen, spend, credit, onPulse, playUiTap, p
 
   return (
     <GameFrame eyebrow="HOUSE · CSGO 0–14" title={<>ROULE<i>TTE</i></>}>
-      <p className="minigame-copy">Grün 0 zahlt 14x. Rot 1–7 und Schwarz 8–14 zahlen 2x. Eine Wette pro Spin.</p>
+      <details className="game-rules"><summary>Spielregeln</summary><p>Grün 0 zahlt 14x. Rot 1–7 und Schwarz 8–14 zahlen 2x. Eine Wette pro Spin.</p></details>
       <YuanStake valueYuan={stakeYuan} onChange={setStakeYuan} balanceFen={balanceFen} disabled={status !== "idle"} />
       <div className="roulette-bets" role="group" aria-label="Wette">
         <button type="button" className={`is-red${bet === "red" ? " is-active" : ""}`} disabled={status !== "idle"} onClick={() => setBet("red")}>RED 2x</button>

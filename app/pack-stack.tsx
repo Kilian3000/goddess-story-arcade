@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useSyncExternalStore, type CSSProperties, type PointerEvent } from "react";
+import { cardFinish } from "./pack-presentation";
+import { FoilSurface } from "./foil-surface";
 import { rarityTier } from "./gacha-engine";
 import { swipeIntent, cardDragTransform, gestureMode, peekAmount, phonePeekAmount, phonePeekVector, phoneSwipeIntent, phoneReleaseVelocity, PHONE_GESTURE_QUERY, type GestureMode, type MotionSample } from "./pack-gestures";
 
@@ -14,6 +16,7 @@ const serverPhoneSnapshot = () => false;
 
 type StackCard = { id: number; image: string; character: string; rarity: string; color: string };
 type Props = {
+  boosterSize?: number;
   cards: StackCard[];
   activeIndex: number;
   onNext: () => void;
@@ -27,7 +30,9 @@ type Gesture = {
   phone: boolean; samples: MotionSample[];
 };
 
-export function PackStack({ cards, activeIndex, onNext, onPrevious, onInspect, onPeek }: Props) {
+export function PackStack({ cards, boosterSize = cards.length, activeIndex, onNext, onPrevious, onInspect, onPeek }: Props) {
+  const boosterStart = Math.floor(activeIndex / boosterSize) * boosterSize;
+  const boosterEnd = Math.min(cards.length, boosterStart + boosterSize);
   const phone = useSyncExternalStore(subscribePhone, phoneSnapshot, serverPhoneSnapshot);
   const deck = useRef<HTMLDivElement>(null);
   const scene = useRef<HTMLDivElement>(null);
@@ -64,6 +69,7 @@ export function PackStack({ cards, activeIndex, onNext, onPrevious, onInspect, o
 
   useLayoutEffect(() => {
     const previous = previousIndex.current;
+    const newBooster = Math.floor(previous / boosterSize) !== Math.floor(activeIndex / boosterSize);
     const flight = releaseVector.current;
     releaseVector.current = null;
     previousIndex.current = activeIndex;
@@ -76,11 +82,13 @@ export function PackStack({ cards, activeIndex, onNext, onPrevious, onInspect, o
     const incoming = elements.current.get(activeIndex);
     if (incoming) incoming.style.transform = "";
     // The input pad never moves. These animations can be interrupted immediately.
-    animateCard(activeIndex, reduced ? [] : [
-      { transform: "translate3d(0,10px,0) scale(.955)", filter: "brightness(1.13)" },
-      { transform: "translate3d(0,-3px,0) scale(1.014)", filter: "brightness(1.04)", offset: .62 },
-      { transform: "none", filter: "brightness(1)" },
-    ], { duration: reduced ? 0 : 360, easing: "cubic-bezier(.16,.75,.25,1)" });
+    animateCard(activeIndex, reduced ? [] : newBooster ? [
+      { transform: "translate3d(0,38px,0) scale(.96)", opacity: 0 },
+      { transform: "none", opacity: 1 },
+    ] : [
+      { transform: "scale(.992)" },
+      { transform: "none" },
+    ], { duration: reduced ? 0 : newBooster ? 440 : 190, easing: "cubic-bezier(.18,.85,.25,1)" });
     if (previous === activeIndex) return;
     consumeClick.current = true;
     const outgoing = elements.current.get(previous);
@@ -96,13 +104,13 @@ export function PackStack({ cards, activeIndex, onNext, onPrevious, onInspect, o
         vector.y ? ((vector.y > 0 ? window.innerHeight - bounds.top : bounds.bottom) + 40) / Math.abs(vector.y) : Infinity,
       )
       : Math.max(outgoing.offsetWidth * 1.4, window.innerWidth / 2 + outgoing.offsetWidth / 2 + 24);
-    const rotation = (vector.x || vector.y) * 17;
+    const rotation = (vector.x || vector.y) * 10;
     animateCard(previous, [
       { transform: from, opacity: 1, visibility: "visible", zIndex: 5 },
       { transform: `translate3d(${vector.x * travel * .65}px,${vector.y * travel * .65 - 30}px,0) rotate(${rotation * .65}deg)`, opacity: 1, visibility: "visible", zIndex: 5, offset: .65 },
       { transform: `translate3d(${vector.x * travel}px,${vector.y * travel - 48}px,0) rotate(${rotation}deg)`, opacity: 0, visibility: "visible", zIndex: 5 },
-    ], { duration: reduced ? 0 : 310, easing: "cubic-bezier(.2,.65,.3,1)" });
-  }, [activeIndex]);
+    ], { duration: reduced ? 0 : 340, easing: "cubic-bezier(.22,.5,.35,1)" });
+  }, [activeIndex, boosterSize]);
 
   useEffect(() => {
     const running = animations.current;
@@ -135,7 +143,7 @@ export function PackStack({ cards, activeIndex, onNext, onPrevious, onInspect, o
     current.lastX = event.clientX;
     current.lastTime = event.timeStamp;
     current.samples = [...current.samples, { x: event.clientX, y: event.clientY, time: event.timeStamp }].filter(sample => sample.time >= event.timeStamp - 140);
-    current.mode = current.phone ? (Math.hypot(dx, dy) >= 8 ? "peek" : "pending") : gestureMode(dx, dy, current.mode);
+    current.mode = current.phone ? (Math.hypot(dx, dy) >= 3 ? "peek" : "pending") : gestureMode(dx, dy, current.mode);
     if (Math.max(Math.abs(dx), Math.abs(dy)) > 8) consumeClick.current = true;
     const card = elements.current.get(activeIndex);
     if (current.mode === "peek") {
@@ -198,27 +206,31 @@ export function PackStack({ cards, activeIndex, onNext, onPrevious, onInspect, o
 
   const active = cards[activeIndex];
   return <>
-    <div className="card-deck tactile-stack" ref={deck} data-tier={tier} style={{ "--rarity-color": active.color } as CSSProperties}>
+    <div className="card-deck tactile-stack" ref={deck} data-tier={tier} data-booster={Math.floor(activeIndex / boosterSize) + 1} data-booster-size={boosterEnd - boosterStart} style={{ "--rarity-color": active.color } as CSSProperties}>
       <div key={activeIndex} className="pack-reveal-light" aria-hidden="true"><i /><i /><i /><i /><i /><i /></div>
       <div className="pack-scene" ref={scene} aria-hidden="true">
-        {activeIndex < cards.length - 1 && <span className="pack-stock" />}
+        {activeIndex < boosterEnd - 1 && <span className="pack-stock" />}
         <div className="pack-peek-edges">
-          {cards.slice(activeIndex + 1).map((card, i) => <i key={i} style={{
-            "--edge": i + 1, zIndex: cards.length - i,
+          {cards.slice(activeIndex + 1, boosterEnd).map((card, i) => <i key={i} style={{
+            "--edge": i + 1, zIndex: boosterEnd - activeIndex - i,
             "--edge-color": rarityTier(card.rarity) >= 1 ? card.color : "#e1d9e5",
           } as CSSProperties} />)}
         </div>
         {cards.map((card, index) => {
+          // Keep the outgoing card mounted for its flight, but never include another
+          // booster's cards in the stock, peek edges or next-card layer.
+          if ((index < boosterStart || index >= boosterEnd) && index !== previousIndex.current) return null;
           const current = index === activeIndex;
-          const position = current ? "is-front" : index === activeIndex + 1 ? "is-next" : index === activeIndex - 1 ? "is-previous" : "is-away";
+          const position = current ? "is-front" : index === activeIndex + 1 && index < boosterEnd ? "is-next" : index === activeIndex - 1 ? "is-previous" : "is-away";
           return <span key={`${card.id}-${index}`} ref={element => { if (element) elements.current.set(index, element); else elements.current.delete(index); }}
             className={`pack-card ${position}`} style={{ "--rarity-color": card.color } as CSSProperties}>
             <img src={card.image} draggable={false} alt="" />
             <span className="pack-face-shine" />
-            {current && rarityTier(card.rarity) >= 2 && <span className="card-holo" />}
+
             {current && <span key={activeIndex} className="pack-reveal-sheen" />}
           </span>;
         })}
+        <FoilSurface finish={cardFinish(active.rarity)} strength={tier >= 4 ? .85 : tier >= 3 ? .65 : tier >= 2 ? .45 : tier >= 1 ? .3 : 0} />
       </div>
       <button className="pack-touch-pad" aria-label={`${active.rarity} ${active.character}. ${phone ? "Drag slowly to peek; flick in any direction for the next card" : "Swipe left to reveal, drag up to peek"}, or tap for details.`}
         onDragStart={event => event.preventDefault()} onContextMenu={event => event.preventDefault()}
@@ -237,8 +249,6 @@ export function PackStack({ cards, activeIndex, onNext, onPrevious, onInspect, o
           setPeek(pinnedPeek.current ? .85 : 0);
           if (pinnedPeek.current) onPeek();
         }}>▱ <span>PEEK</span></button>
-      <p className="desktop-gesture-hint">Drag up to peek<br /><span>Swipe left to reveal</span></p>
-      <p className="phone-gesture-hint">Slow drag to peek · Quick flick for next</p>
     </div>
   </>;
 }

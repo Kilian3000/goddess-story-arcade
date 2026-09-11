@@ -397,6 +397,39 @@ export function rarityTier(rarity: string) {
   return 4;
 }
 
+export const TEN_PACK_BONUS_CHANCE = .10;
+
+// A separate, non-consuming roll: the physical box queue advances once per pack.
+// Single openings use the exact original draw and consume no bonus random values.
+export function applyTenPackBonus(
+  rarities: string[], recipe: PackRecipe, packCount: number, random: RandomSource = secureRandom,
+) {
+  if (packCount !== 10 || random() >= TEN_PACK_BONUS_CHANCE) return { rarities, boostedIndex: null };
+  let offset = 0;
+  let slot = -1;
+  let targets: LaneTarget[] = [];
+  for (const zone of recipe.zones) {
+    const definition = recipe.lanes.find(item => item.id === zone.laneId);
+    if (definition?.slotsPerPack) {
+      slot = offset + zone.fixed.length + definition.slotsPerPack - 1;
+      targets = definition.targets.filter(row => row.target > 0);
+    }
+    offset += zone.fixed.length + (definition?.slotsPerPack || 0);
+  }
+  if (!rarities[slot] || !targets.length) return { rarities, boostedIndex: null };
+  const total = targets.reduce((sum, row) => sum + row.target, 0);
+  let roll = random() * total;
+  const candidate = targets.find(row => (roll -= row.target) < 0) || targets[targets.length - 1];
+  const current = targets.find(row => row.rarity === rarities[slot]);
+  const betterTier = rarityTier(candidate.rarity) > rarityTier(rarities[slot]);
+  const rarerWithinTier = rarityTier(candidate.rarity) === rarityTier(rarities[slot])
+    && current && candidate.target < current.target;
+  if (!betterTier && !rarerWithinTier) return { rarities, boostedIndex: null };
+  const improved = [...rarities];
+  improved[slot] = candidate.rarity;
+  return { rarities: improved, boostedIndex: slot };
+}
+
 export function recipeRarityTargets(recipe: PackRecipe, config: PackConfig) {
   const counts = new Map<string, number>();
   for (const zone of recipe.zones) {

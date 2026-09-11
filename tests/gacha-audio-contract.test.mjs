@@ -74,20 +74,14 @@ test("each fresh card advances the pack melody with an immediate attack", () => 
   assert.match(tear, /revealStep.current = 0/);
 });
 
-test("music is a varied 16-step arcade groove and starts immediately", () => {
-  const bass = source.match(/const bassPattern[^=]*= \[([^\]]+)\]/)?.[1]
-    .split(",")
-    .map((value) => value.trim());
-  assert.equal(bass?.length, 16);
-  assert.ok(new Set(bass?.filter((value) => value !== "null")).size >= 3);
-  assert.match(source, /function musicKick/);
-  assert.match(source, /function musicSnare/);
-  assert.match(source, /function musicHat/);
-  assert.match(source, /const arpShapes = \[[\s\S]*?\];/);
-
+test("uploaded background music replaces the synthesized groove", async () => {
+  const background = await readFile(new URL("../app/background-music.tsx", import.meta.url), "utf8");
+  assert.match(background, /positive-chill-hop\.mp3/);
+  assert.match(background, /disco\.mp3/);
+  assert.match(background, /<audio[^>]*loop/);
+  assert.match(background, /goddess-music-mode/);
+  assert.match(background, /player\.pause\(\)/);
+  assert.match(background, /player\.play\(\)\.catch/);
   const begin = section("const beginMusic = useCallback", "const toggleMuted");
-  assert.equal(begin.includes("await "), false);
-  assert.ok(begin.indexOf("pump();") < begin.indexOf("window.setInterval"));
-  assert.match(begin, /if \(musicTimer\.current !== null\) return/);
-  assert.match(begin, /if \(mutedRef\.current \|\| !musicEnabledRef\.current\) return/);
+  assert.doesNotMatch(begin, /musicKick|setInterval/);
 });

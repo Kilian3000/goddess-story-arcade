@@ -157,7 +157,7 @@ export function JackpotTable({ rows, catalog, valueFen, takeCards, grantCards, o
 
   return (
     <GameFrame eyebrow="CARDS · WINNER TAKES ALL" title={<>JACK<i>POT</i></>}>
-      <p className="minigame-copy">Wähle die Tischklasse — sie begrenzt, wie hoch die Bots setzen. Dein eigener Einsatz darf darüber oder darunter liegen.</p>
+      <details className="game-rules"><summary>Spielregeln</summary><p>Wähle die Tischklasse — sie begrenzt, wie hoch die Bots setzen. Dein eigener Einsatz darf darüber oder darunter liegen.</p></details>
       <TableTiers value={tierId} onChange={setTierId} disabled={status !== "idle"} playUiTap={playUiTap} />
       <CardStakePicker rows={rows} selected={status === "idle" ? selected : []} onChange={setSelected} disabled={status !== "idle"} />
       <div className="jackpot-wheel-wrap">

@@ -97,7 +97,7 @@ export function CrashTable({ balanceFen, spend, credit, onPulse, playUiTap, play
 
   return (
     <GameFrame eyebrow="HOUSE · YUAN CRASH" title={<>CR<i>ASH</i></>}>
-      <p className="minigame-copy">Der Multiplikator steigt. Cash out, bevor die Kurve reißt. Einsatz ist sofort weg — Gewinn zahlt den vollen Multiplikator.</p>
+      <details className="game-rules"><summary>Spielregeln</summary><p>Der Multiplikator steigt. Cash out, bevor die Kurve reißt. Einsatz ist sofort weg — Gewinn zahlt den vollen Multiplikator.</p></details>
       <YuanStake valueYuan={stakeYuan} onChange={setStakeYuan} balanceFen={balanceFen} disabled={status === "running"} />
       <div className={`crash-board crash-${status}`}>
         <b>{status === "crashed" ? `${crashAt.toFixed(2)}x` : `${multiplier.toFixed(2)}x`}</b>

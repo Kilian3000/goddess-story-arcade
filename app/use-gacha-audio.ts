@@ -146,90 +146,6 @@ function glassNote(rig: AudioRig, midi: number, delay: number, strength: number,
   tone(rig, note(midi) * 2.76, delay, duration * 0.36, strength * 0.15, "sine");
 }
 
-function musicTone(
-  rig: AudioRig,
-  midi: number,
-  delay: number,
-  duration: number,
-  peak: number,
-  type: OscillatorType = "sine",
-  cutoff?: number,
-  attack = 0.008,
-) {
-  const start = rig.context.currentTime + delay;
-  const oscillator = rig.context.createOscillator();
-  const filter = rig.context.createBiquadFilter();
-  const gain = rig.context.createGain();
-  oscillator.type = type;
-  oscillator.frequency.value = note(midi);
-  filter.type = "lowpass";
-  filter.frequency.value = cutoff ?? (type === "square" ? 1650 : type === "sawtooth" ? 920 : 2400);
-  filter.Q.value = 1.2;
-  gain.gain.setValueAtTime(0.0001, start);
-  gain.gain.exponentialRampToValueAtTime(peak, start + Math.min(attack, duration * 0.25));
-  gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-  oscillator.connect(filter);
-  filter.connect(gain);
-  gain.connect(rig.music);
-  oscillator.start(start);
-  oscillator.stop(start + duration + 0.04);
-}
-
-function musicNoise(
-  rig: AudioRig,
-  delay: number,
-  duration: number,
-  frequency: number,
-  peak: number,
-  type: BiquadFilterType,
-  q = 0.8,
-) {
-  const start = rig.context.currentTime + delay;
-  const source = rig.context.createBufferSource();
-  const filter = rig.context.createBiquadFilter();
-  const gain = rig.context.createGain();
-  source.buffer = rig.noise;
-  filter.type = type;
-  filter.frequency.setValueAtTime(frequency, start);
-  filter.Q.value = q;
-  gain.gain.setValueAtTime(0.0001, start);
-  gain.gain.exponentialRampToValueAtTime(peak, start + Math.min(0.004, duration * 0.15));
-  gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-  source.connect(filter);
-  filter.connect(gain);
-  gain.connect(rig.music);
-  source.start(start, Math.random() * 0.65, duration);
-  source.stop(start + duration + 0.02);
-}
-
-function musicKick(rig: AudioRig, delay: number, accent = 1) {
-  const start = rig.context.currentTime + delay;
-  const oscillator = rig.context.createOscillator();
-  const gain = rig.context.createGain();
-  oscillator.type = "sine";
-  oscillator.frequency.setValueAtTime(148, start);
-  oscillator.frequency.exponentialRampToValueAtTime(52, start + 0.15);
-  gain.gain.setValueAtTime(0.0001, start);
-  gain.gain.exponentialRampToValueAtTime(0.22 * accent, start + 0.003);
-  gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.18);
-  oscillator.connect(gain);
-  gain.connect(rig.music);
-  oscillator.start(start);
-  oscillator.stop(start + 0.2);
-  // The short click keeps the kick present on MacBook and phone speakers.
-  musicNoise(rig, delay, 0.018, 2100, 0.025 * accent, "bandpass", 1.4);
-}
-
-function musicSnare(rig: AudioRig, delay: number, accent = 1) {
-  musicNoise(rig, delay, 0.14, 1750, 0.1 * accent, "bandpass", 0.75);
-  musicNoise(rig, delay, 0.055, 6200, 0.035 * accent, "highpass", 0.5);
-  musicTone(rig, 54, delay, 0.09, 0.032 * accent, "triangle", 750, 0.003);
-}
-
-function musicHat(rig: AudioRig, delay: number, open = false, accent = 1) {
-  musicNoise(rig, delay, open ? 0.12 : 0.035, open ? 6900 : 8200, (open ? 0.033 : 0.025) * accent, "highpass", 0.55);
-}
-
 export function useGachaAudio() {
   const rig = useRef<AudioRig | null>(null);
   const mutedRef = useRef(false);
@@ -299,6 +215,7 @@ export function useGachaAudio() {
   }, []);
 
   const stopMusic = useCallback(() => {
+    window.dispatchEvent(new Event("goddess-music-sync"));
     if (musicTimer.current !== null) window.clearInterval(musicTimer.current);
     musicTimer.current = null;
     musicNextStepAt.current = 0;
@@ -311,82 +228,7 @@ export function useGachaAudio() {
 
   const beginMusic = useCallback((): Promise<void> => {
     if (mutedRef.current || !musicEnabledRef.current) return Promise.resolve();
-    let current = rig.current;
-    if (!current || current.context.state === "closed") {
-      current = makeRig();
-      rig.current = current;
-    }
-    if (!current) return Promise.resolve();
-    const activeRig = current;
-    void resumeContext(activeRig.context);
-    activeRig.music.gain.setTargetAtTime(MUSIC_LEVEL, activeRig.context.currentTime, 0.035);
-    if (musicTimer.current !== null) return Promise.resolve();
-
-    // Four bars of A-minor arcade pop. The drums land on a club groove while
-    // the upper arpeggio changes shape each bar, avoiding the old one-line
-    // metronome feel without requiring any downloaded audio assets.
-    const roots = [45, 48, 41, 43];
-    const chordKinds = [0, 1, 1, 1]; // A minor, C major, F major, G major
-    const bassPattern: Array<number | null> = [0, null, null, 0, null, null, 7, null, 12, null, null, 7, null, null, 0, null];
-    const arpShapes = [
-      [12, 19, 24, 19, 15, 19, 24, 27],
-      [12, 16, 19, 24, 19, 16, 24, 28],
-      [12, 16, 19, 24, 28, 24, 19, 16],
-      [12, 19, 24, 26, 19, 14, 17, 23],
-    ];
-    const kickSteps = new Set([0, 3, 7, 8, 11, 14]);
-
-    const scheduleStep = (absoluteStep: number, delay: number) => {
-      const bar = Math.floor(absoluteStep / 16) % roots.length;
-      const step = absoluteStep % 16;
-      const root = roots[bar];
-
-      if (kickSteps.has(step)) musicKick(activeRig, delay, step === 0 || step === 8 ? 1 : 0.78);
-      if (step === 4 || step === 12) musicSnare(activeRig, delay, step === 12 ? 1.06 : 0.94);
-      if (step % 2 === 0) musicHat(activeRig, delay, step === 14, step % 4 === 0 ? 1 : 0.72);
-      else if (step === 7 || step === 15) musicHat(activeRig, delay, false, 0.42);
-
-      const bassOffset = bassPattern[step];
-      if (bassOffset !== null) {
-        musicTone(activeRig, root + bassOffset, delay, step === 14 ? 0.19 : 0.25, 0.075, "sawtooth", 720, 0.006);
-      }
-
-      if (step % 2 === 0) {
-        const arpIndex = Math.floor(step / 2);
-        const octaveLift = absoluteStep % 64 >= 48 && (arpIndex === 3 || arpIndex === 7) ? 12 : 0;
-        musicTone(activeRig, root + arpShapes[bar][arpIndex] + octaveLift, delay, 0.12, 0.044, "square", 2100, 0.004);
-      }
-
-      if (step === 0) {
-        const third = chordKinds[bar] === 0 ? 3 : 4;
-        [root + 12, root + 12 + third, root + 19].forEach((midi, index) => {
-          musicTone(activeRig, midi, delay + index * 0.008, 0.82, 0.014, "triangle", 1550, 0.045);
-        });
-      }
-
-      // A tiny end-of-bar sparkle advertises the loop without overpowering
-      // game reveals, which remain on their independent SFX bus.
-      if (step === 15 && bar % 2 === 1) {
-        musicTone(activeRig, root + 31, delay, 0.18, 0.032, "sine", 3600, 0.003);
-      }
-    };
-
-    musicNextStepAt.current = activeRig.context.currentTime + 0.012;
-    const pump = () => {
-      const now = activeRig.context.currentTime;
-      if (musicNextStepAt.current < now - MUSIC_STEP_SECONDS * 2) {
-        // Recover cleanly after a background-tab throttle without scheduling a
-        // burst of every missed beat.
-        musicNextStepAt.current = now + 0.012;
-      }
-      while (musicNextStepAt.current < now + MUSIC_LOOKAHEAD_SECONDS) {
-        scheduleStep(musicStep.current, Math.max(0.002, musicNextStepAt.current - now));
-        musicStep.current += 1;
-        musicNextStepAt.current += MUSIC_STEP_SECONDS;
-      }
-    };
-    pump();
-    musicTimer.current = window.setInterval(pump, MUSIC_SCHEDULER_MS);
+    window.dispatchEvent(new Event("goddess-music-sync"));
     return Promise.resolve();
   }, []);
 
@@ -398,6 +240,7 @@ export function useGachaAudio() {
     window.localStorage.setItem(SOUND_KEY, next ? "muted" : "on");
     const current = rig.current;
     if (current) current.master.gain.setTargetAtTime(next ? 0 : MASTER_LEVEL, current.context.currentTime, 0.025);
+    window.dispatchEvent(new Event("goddess-music-sync"));
     if (!next && musicEnabledRef.current) void beginMusic();
   }, [beginMusic, ensure]);
 

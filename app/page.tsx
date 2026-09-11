@@ -1,11 +1,12 @@
 "use client";
 
-import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
+import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
 import Link from "next/link";
 import {
   compilePackRecipe,
+  applyTenPackBonus,
   createCollationState,
   drawPackRarities,
   isCollationStateValid,
@@ -20,7 +21,7 @@ import { arcadeConfig, cardAsset } from "./arcade-config";
 import { groupClass, groupLabels, rarityColor } from "./arcade-ui";
 import type { Card } from "./card-types";
 import {
-  canOpenPack,
+  canOpenPacks,
   clearPendingTopup,
   formatYuan,
   readPendingSnapshot,
@@ -35,6 +36,9 @@ import {
 } from "./economy";
 import { packHaptic } from "./pack-gestures";
 import { PackStack } from "./pack-stack";
+import { boosterShine } from "./pack-presentation";
+import { SellButton } from "./sell-button";
+import { PackOpening } from "./pack-opening";
 import { PackCarousel } from "./pack-carousel";
 import { type WaifuMuse } from "./lucky-shrine";
 import { MinigameHub } from "./minigames/minigame-hub";
@@ -117,23 +121,9 @@ function readCollation(config: PackConfig, recipe: PackRecipe) {
   return createCollationState(config, recipe);
 }
 
-function PackSigil() {
-  return (
-    <svg className="pack-sigil" viewBox="0 0 200 200" aria-hidden="true">
-      <circle cx="100" cy="100" r="70" fill="none" stroke="currentColor" strokeWidth="1.2" />
-      <circle cx="100" cy="100" r="48" fill="none" stroke="currentColor" strokeWidth=".8" />
-      {[0, 60, 120, 180, 240, 300].map((rotation) => (
-        <ellipse key={rotation} cx="100" cy="55" rx="19" ry="43" fill="none" stroke="currentColor" strokeWidth="1.4" transform={`rotate(${rotation} 100 100)`} />
-      ))}
-      <path d="M100 79a21 21 0 1 0 0 42 17 17 0 1 1 0-42Z" fill="currentColor" />
-      <path d="M100 7v17M100 176v17M7 100h17M176 100h17" stroke="currentColor" />
-    </svg>
-  );
-}
-
 export default function Home() {
   const { allCards, sets, catalog, dbStatus, catalogStatus, catalogReady } = useCardCatalog();
-  const { state: economy, valueFen, openPack: chargeOpenedPack, sell, creditTopup } = useEconomy();
+  const { state: economy, valueFen, openPacks: chargeOpenedPacks, sell, creditTopup } = useEconomy();
   const pendingRaw = useSyncExternalStore(subscribePendingTopup, readPendingSnapshot, () => "");
   const prizeRaw = useSyncExternalStore(subscribePrizeLock, readPrizeSnapshot, () => "");
   const pendingTopup = pendingRaw ? readPendingTopup() : null;
@@ -147,27 +137,26 @@ export default function Home() {
   const [revealedThrough, setRevealedThrough] = useState(-1);
   const [phase, setPhase] = useState<Phase>("sealed");
   const [packChosen, setPackChosen] = useState(false);
+  const [packCount, setPackCount] = useState<1 | 10>(1);
   const playFromUrl = useSyncExternalStore(subscribePlayParam, playSnapshot, () => "");
   const activeGame = minigameById(playFromUrl)?.id ?? DEFAULT_MINIGAME;
   const mode: ExperienceMode = prizeRecord ? "altar" : playFromUrl ? "games" : "altar";
+  useEffect(() => { window.dispatchEvent(new CustomEvent("goddess-music-mode", { detail: mode })); }, [mode]);
   const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [inspectorFromSummary, setInspectorFromSummary] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [search, setSearch] = useState("");
-  const [tearProgress, setTearProgress] = useState(0);
   const [generationError, setGenerationError] = useState("");
   const [direction, setDirection] = useState<1 | -1>(1);
   const [transitioning, setTransitioning] = useState(false);
   const [freshIndex, setFreshIndex] = useState(-1);
   const [hitNonce, setHitNonce] = useState(0);
+  const soldGuard = useRef<{ pack: Card[]; indexes: Set<number> }>({ pack: [], indexes: new Set() });
   const [soldIndexes, setSoldIndexes] = useState<Set<number>>(() => new Set());
   const [walletAnimating, setWalletAnimating] = useState(false);
   const [walletFromFen, setWalletFromFen] = useState(0);
   const sequence = useRef(0);
-  const tearStart = useRef<number | null>(null);
-  const dragged = useRef(false);
-  const suppressClick = useRef(false);
-  const tearTick = useRef(0);
   const inputLock = useRef(false);
   const revealedRef = useRef(-1);
   const navigationTimer = useRef<number | null>(null);
@@ -232,7 +221,6 @@ export default function Home() {
       setPhase("sealed");
       setPackChosen(false);
       setInspectorOpen(false);
-      setTearProgress(0);
       setGenerationError("");
       setSoldIndexes(new Set());
     }, 0);
@@ -241,10 +229,10 @@ export default function Home() {
 
   const active = pack[activeIndex];
   const dataReady = catalogReady && Boolean(selectedPack && recipe && collation);
-  const canAfford = selectedPack ? canOpenPack(economy, selectedPack.cost) : false;
+  const canAfford = selectedPack ? canOpenPacks(economy, selectedPack.cost, packCount) : false;
   const usingVoucher = selectedPack ? Boolean(voucherForCost(selectedPack.cost) && economy.vouchers[voucherForCost(selectedPack.cost)!] > 0) : false;
   const packValueFen = pack.reduce((sum, card) => sum + valueFen(card.id, card.rarity), 0);
-  const packCostFen = (selectedPack?.cost ?? 0) * 100;
+  const packCostFen = (selectedPack?.cost ?? 0) * 100 * packCount;
   const packNetFen = packValueFen - packCostFen;
   const bestPull = pack.length
     ? pack.reduce((best, card) => rarityTier(card.rarity) > rarityTier(best.rarity) ? card : best)
@@ -254,8 +242,6 @@ export default function Home() {
   const groupOptions = [...new Set(catalog.map((item) => item.group))];
   const shrineMuse = shrineDealerCards[0];
   const packMuse = shrineDealerCards[(selectedPack?.id || 0) % shrineDealerCards.length] || shrineMuse;
-  const sideMuse = shrineDealerCards[((selectedPack?.id || 0) + 7) % shrineDealerCards.length] || shrineMuse;
-  const rivalMuse = shrineDealerCards[((selectedPack?.id || 0) + 13) % shrineDealerCards.length] || shrineMuse;
 
   const getPool = useCallback((rarity: string) => {
     if (!selectedPack) return [];
@@ -329,7 +315,7 @@ export default function Home() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        if (inspectorOpen) setInspectorOpen(false);
+        if (inspectorOpen) { setInspectorOpen(false); if (inspectorFromSummary) setPhase("summary"); }
         else if (showInfo) setShowInfo(false);
         else if (showMenu) setShowMenu(false);
         return;
@@ -340,39 +326,48 @@ export default function Home() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [inspectorOpen, nextCard, phase, previousCard, showInfo, showMenu]);
+  }, [inspectorOpen, inspectorFromSummary, nextCard, phase, previousCard, showInfo, showMenu]);
 
   const openPack = useCallback(async () => {
     if (!selectedPack || !recipe || !collation || !dataReady || !packChosen || phase !== "sealed" || mode !== "altar" || inputLock.current) return;
-    if (!canOpenPack(economy, selectedPack.cost)) {
+    if (!canOpenPacks(economy, selectedPack.cost, packCount)) {
       setGenerationError("Nicht genug Yuan für diesen Booster.");
       return;
     }
     void startMusic();
     setGenerationError("");
     const token = ++sequence.current;
-    const draw = drawPackRarities(selectedPack, recipe, collation);
-    const used = new Set<number>();
-    const result: Card[] = [];
-    for (const rarity of draw.rarities) {
-      const card = chooseUniqueCard(getPool(rarity), used);
-      if (!card) {
-        setGenerationError(`Für ${rarity} fehlen eindeutige Kartenbilder in ${selectedPack.setName}.`);
-        return;
+    let nextCollation = collation;
+    const batches: Card[][] = [];
+    for (let packNumber = 0; packNumber < packCount; packNumber++) {
+      const draw = drawPackRarities(selectedPack, recipe, nextCollation);
+      const used = new Set<number>();
+      const cards: Card[] = [];
+      for (const rarity of draw.rarities) {
+        const card = chooseUniqueCard(getPool(rarity), used);
+        if (!card) { setGenerationError(`Für ${rarity} fehlen eindeutige Kartenbilder in ${selectedPack.setName}.`); return; }
+        cards.push(card);
       }
-      result.push(card);
+      if (cards.length !== selectedPack.odds.cardsPerPack) { setGenerationError("Die Pack-Kollation konnte nicht vollständig aufgebaut werden."); return; }
+      const bonus = applyTenPackBonus(draw.rarities, recipe, packCount);
+      if (bonus.boostedIndex !== null) {
+        const slot = bonus.boostedIndex;
+        const others = new Set(cards.filter((_, index) => index !== slot).map(card => card.id));
+        const upgraded = chooseUniqueCard(getPool(bonus.rarities[slot]), others);
+        // A tiny/incomplete catalog pool cannot turn the bonus into a failed purchase.
+        if (upgraded) cards[slot] = upgraded;
+      }
+      batches.push(cards);
+      nextCollation = draw.state;
     }
-    if (result.length !== selectedPack.odds.cardsPerPack) {
-      setGenerationError("Die Pack-Kollation konnte nicht vollständig aufgebaut werden.");
-      return;
-    }
-    const charged = chargeOpenedPack(selectedPack.cost, result.map((card) => card.id));
+    const result = batches.flat();
+    const charged = chargeOpenedPacks(selectedPack.cost, batches.map(cards => cards.map(card => card.id)));
     if (!charged.ok) {
       setGenerationError("Nicht genug Yuan für diesen Booster.");
       return;
     }
 
-    const nextOpened = opened + 1;
+    const nextOpened = opened + packCount;
     inputLock.current = true;
     void playTear();
     packHaptic(3);
@@ -384,18 +379,17 @@ export default function Home() {
     setDirection(1);
     setTransitioning(false);
     setInspectorOpen(false);
-    setCollation(draw.state);
+    setCollation(nextCollation);
     setOpened(nextOpened);
     setPhase("opening");
-    setTearProgress(1);
     setSoldIndexes(new Set());
-    window.localStorage.setItem(collationKey(selectedPack.setName), JSON.stringify(draw.state));
+    window.localStorage.setItem(collationKey(selectedPack.setName), JSON.stringify(nextCollation));
     window.localStorage.setItem(openedKey(selectedPack.setName), String(nextOpened));
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     await Promise.all([
       preloadCards(result),
-      new Promise((resolve) => window.setTimeout(resolve, reducedMotion ? 30 : 650)),
+      new Promise((resolve) => window.setTimeout(resolve, reducedMotion ? 30 : (packCount === 10 ? 3190 : 1850))),
     ]);
     if (sequence.current !== token) return;
     inputLock.current = false;
@@ -408,38 +402,7 @@ export default function Home() {
       setFreshIndex(0);
       setHitNonce((value) => value + 1);
     });
-  }, [chargeOpenedPack, collation, dataReady, economy, getPool, mode, opened, packChosen, phase, playReveal, playTear, recipe, selectedPack, startMusic]);
-
-  const onPackPointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    if (!event.isPrimary || event.button !== 0 || !dataReady || phase !== "sealed") return;
-    tearStart.current = event.clientX;
-    tearTick.current = 0;
-    dragged.current = false;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    void playFoil();
-  };
-  const onPackPointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    if (tearStart.current === null) return;
-    const distance = Math.abs(event.clientX - tearStart.current);
-    if (distance > 6) dragged.current = true;
-    const progress = Math.min(1, distance / (event.currentTarget.offsetWidth * .55));
-    setTearProgress(progress);
-    const tick = Math.floor(progress * 4);
-    if (tick > tearTick.current) { tearTick.current = tick; void playFoil(progress); packHaptic(); }
-  };
-  const onPackPointerUp = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    if (tearStart.current === null) return;
-    const finalProgress = Math.min(1, Math.abs(event.clientX - tearStart.current) / (event.currentTarget.offsetWidth * .55));
-    const shouldOpen = dragged.current && finalProgress >= 0.65;
-    suppressClick.current = dragged.current;
-    tearStart.current = null;
-    try { event.currentTarget.releasePointerCapture(event.pointerId); } catch { /* capture may already be gone */ }
-    if (shouldOpen) void openPack(); else setTearProgress(0);
-  };
-  const onPackClick = () => {
-    if (suppressClick.current) { suppressClick.current = false; return; }
-    void openPack();
-  };
+  }, [chargeOpenedPacks, packCount, collation, dataReady, economy, getPool, mode, opened, packChosen, phase, playReveal, playTear, recipe, selectedPack, startMusic]);
 
   const resetForAnother = () => {
     inputLock.current = false;
@@ -453,13 +416,13 @@ export default function Home() {
     setDirection(1);
     setTransitioning(false);
     setInspectorOpen(false);
-    setTearProgress(0);
     setPhase("sealed");
     setPackChosen(false);
     setSoldIndexes(new Set());
   };
   const selectPack = (item: PackConfig) => {
     if (!canChangeSet) return;
+    setPackCount(1);
     setPickedPack(item);
     setPackChosen(false);
     setGroupFilter(item.group);
@@ -467,6 +430,7 @@ export default function Home() {
   };
   const claimGamePrize = (item: PackConfig, source: MinigameId) => {
     sequence.current += 1;
+    setPackCount(1);
     setPickedPack(item);
     setGroupFilter(item.group);
     setPack([]);
@@ -475,7 +439,6 @@ export default function Home() {
     setFreshIndex(-1);
     revealedRef.current = -1;
     setInspectorOpen(false);
-    setTearProgress(0);
     setPhase("sealed");
     setPackChosen(false);
     writePlayParam(null);
@@ -491,12 +454,20 @@ export default function Home() {
     setWalletAnimating(true);
     window.setTimeout(() => setWalletAnimating(false), 1000);
   };
-  const sellFromPack = (index: number) => {
+  const sellFromPack = (index: number): boolean => {
     const card = pack[index];
-    if (!card || soldIndexes.has(index)) return;
-    if (sell(card.id, valueFen(card.id, card.rarity))) {
-      setSoldIndexes((current) => new Set(current).add(index));
-    }
+    if (soldGuard.current.pack !== pack) soldGuard.current = { pack, indexes: new Set() };
+    const guard = soldGuard.current.indexes;
+    if (!card || soldIndexes.has(index) || guard.has(index)) return false;
+    guard.add(index);
+    try {
+      if (sell(card.id, valueFen(card.id, card.rarity))) {
+        setSoldIndexes((current) => new Set(current).add(index));
+        return true;
+      }
+      guard.delete(index);
+      return false;
+    } catch (error) { guard.delete(index); throw error; }
   };
   const acceptTopup = () => {
     if (!pendingTopup) return;
@@ -519,9 +490,25 @@ export default function Home() {
     writePlayParam(id);
   };
 
+  useEffect(() => {
+    if (!showMenu) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const sheet = document.querySelector<HTMLElement>(".pack-picker-sheet");
+    sheet?.querySelector<HTMLButtonElement>("button")?.focus();
+    const trap = (event: KeyboardEvent) => {
+      if (event.key !== "Tab" || !sheet) return;
+      const controls = Array.from(sheet.querySelectorAll<HTMLElement>('button:not(:disabled), input, select, a[href]'));
+      const first = controls[0], last = controls.at(-1);
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    document.addEventListener("keydown", trap);
+    return () => { document.removeEventListener("keydown", trap); if (previous?.isConnected) previous.focus(); };
+  }, [showMenu]);
+
   const filteredCatalog = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return catalog.filter((item) => item.group === activeGroup && (!query || item.setName.toLowerCase().includes(query)));
+    return catalog.filter((item) => query ? item.setName.toLowerCase().includes(query) : item.group === activeGroup);
   }, [activeGroup, catalog, search]);
   const targetRows = useMemo(() => (
     recipe && selectedPack
@@ -533,7 +520,7 @@ export default function Home() {
     : undefined;
 
   return (
-    <main className={`gacha-stage ${palette} phase-${phase} mode-${mode}${mode === "games" ? ` game-${activeGame}${activeGame === "waifu21" ? " mode-shrine" : ""}${activeGame === "heartlock" ? " mode-duel" : ""}` : ""}${showMenu ? " menu-open" : ""}`} style={sceneStyle}>
+    <main className={`gacha-stage ${palette} phase-${phase} mode-${mode}${mode === "games" ? ` game-${activeGame}${activeGame === "waifu21" ? " mode-shrine" : ""}${activeGame === "heartlock" ? " mode-duel" : ""}` : ""}${showMenu ? " menu-open" : ""}${packChosen ? " pack-is-chosen" : ""}`} style={sceneStyle}>
       <div className="scene-vignette" /><div className="constellation constellation-a" /><div className="constellation constellation-b" />
       <div className="orbit orbit-one" /><div className="orbit orbit-two" />
       <div className="dust" aria-hidden="true">{Array.from({ length: 12 }, (_, index) => <i key={index} />)}</div>
@@ -543,7 +530,7 @@ export default function Home() {
         <header className="gacha-header">
           <div className="header-left">
             {mode === "altar" && phase === "sealed" && packChosen && !prizeLock
-              ? <button className="edge-control vault-trigger back-trigger" aria-label="Zurück zum Booster-Karussell" onClick={() => { setPackChosen(false); setTearProgress(0); }}><span className="edge-icon"><AppIcon name="back" /></span><b>BACK</b></button>
+              ? <button className="edge-control vault-trigger back-trigger" aria-label="Zurück zum Booster-Karussell" onClick={() => { setPackChosen(false); }}><span className="edge-icon"><AppIcon name="back" /></span><b>BACK</b></button>
               : <button className="edge-control vault-trigger" aria-label="Booster-Auswahl öffnen" aria-expanded={showMenu} onClick={() => setShowMenu(true)} disabled={mode !== "altar" || Boolean(prizeLock)}><span className="edge-icon"><AppIcon name="menu" /></span><b>BOOSTERS</b></button>}
           </div>
           <div className="wordmark" aria-label={arcadeConfig.brandLabel}>{arcadeConfig.brandLead}<span>{arcadeConfig.brandAccent}</span><small>{arcadeConfig.brandTagline}</small></div>
@@ -588,35 +575,10 @@ export default function Home() {
             />
           )}
 
-          {mode === "altar" && selectedPack && dataReady && phase === "sealed" && !packChosen && <PackCarousel key={selectedPack.setName} art={packMuse.image} setName={selectedPack.setName} cost={selectedPack.cost} cards={selectedPack.odds.cardsPerPack} onTick={() => { void playUiTap(); packHaptic(); }} onChoose={() => { setPackChosen(true); void startMusic(); }} />}
+          {mode === "altar" && selectedPack && dataReady && phase === "sealed" && !packChosen && <PackCarousel key={selectedPack.setName} art={packMuse.image} setName={selectedPack.setName} cost={selectedPack.cost} cards={selectedPack.odds.cardsPerPack} onTick={() => { void playUiTap(); packHaptic(); }} locked={Boolean(prizeLock)} onSelectSet={() => setShowMenu(true)} onChoose={(count) => { setPackCount(count); setPackChosen(true); void startMusic(); }} />}
 
           {mode === "altar" && selectedPack && packChosen && (phase === "sealed" || phase === "opening") && (
-            <div className="pack-presentation">
-              <div className="pack-halo" />
-              <aside className="pack-side pack-side-left" aria-label="Featured adult card artwork">
-                <img src={sideMuse.image} alt="" />
-                <span><small>TONIGHT&apos;S BADDIE</small><b>{sideMuse.character}</b><em>{sideMuse.setName} · {sideMuse.rarity}</em></span>
-              </aside>
-              <button className={`pack-wrapper ${phase === "opening" ? "is-opening" : ""}`} style={{ "--tear": tearProgress, "--pack-art": `url(${packMuse.image})` } as CSSProperties} onClick={onPackClick} onPointerDown={onPackPointerDown} onPointerMove={onPackPointerMove} onPointerUp={onPackPointerUp} onPointerCancel={() => { tearStart.current = null; setTearProgress(0); }} disabled={!dataReady || phase === "opening" || !canAfford} aria-label={`${selectedPack.setName} Booster öffnen`}>
-                <span className="pack-card-stack" aria-hidden="true"><i /><i /><b>GS</b></span>
-                {(["body", "top"] as const).map((part) => <span key={part} className={`pack-face pack-face-${part}`} aria-hidden="true">
-                <img className="pack-hero-art" src={packMuse.image} alt="" draggable={false} />
-                <span className="foil-color" /><span className="foil-shimmer" />
-                <span className="pack-copy"><span className="pack-series">GODDESS</span><span className="pack-series pack-series-outline">STORY</span><span className="pack-subtitle">VIRTUAL BOOSTER</span></span>
-                <PackSigil />
-                <span className="pack-cover-tag">COVER GIRL · {packMuse.character}</span>
-                <span className="pack-code">{selectedPack.setName}</span>
-                <span className="pack-edition">{selectedPack.cost} YUAN · {selectedPack.odds.cardsPerPack} CARDS</span>
-                </span>)}
-                <span className="tear-handle"><i /><b aria-hidden="true">← ✦ →</b></span>
-              </button>
-              <aside className="pack-side pack-side-right" aria-label="Selected booster profile">
-                <img src={rivalMuse.image} alt="" />
-                <div className="pack-profile-copy"><small>BOOSTER PROFILE</small><b>{selectedPack.setName}</b><strong>{selectedPack.odds.cardsPerPack}<i>CARDS</i></strong><p>{recipe?.pattern || `${selectedPack.cost} Yuan pack`}</p><em>FEAT. {rivalMuse.character}</em></div>
-              </aside>
-              <p className="gesture-hint">Swipe the seam <span>or tap</span></p>
-              {phase === "opening" && <p className="opening-copy"><span>✦</span> HERE WE GO</p>}
-            </div>
+            <PackOpening key={`${selectedPack.setName}-${packCount}`} art={packMuse.image} setName={selectedPack.setName} cost={selectedPack.cost} cards={selectedPack.odds.cardsPerPack} count={packCount} opening={phase === "opening"} affordable={canAfford} glows={recipe ? Array.from({ length: packCount }, (_, i) => { const shine = boosterShine(pack.slice(i * selectedPack.odds.cardsPerPack, (i + 1) * selectedPack.odds.cardsPerPack).map(card => card.rarity), recipe); return { level: shine.level, color: shine.rarity ? rarityColor(shine.rarity) : "#cde9f6" }; }) : []} firstCard={pack[0] ? cardImage(pack[0]) : undefined} onOpen={() => void openPack()} onFoil={(progress) => { void playFoil(progress); packHaptic(); }} />
           )}
 
           {mode === "altar" && phase === "revealing" && active && (
@@ -625,12 +587,12 @@ export default function Home() {
               <div className="reveal-halo" />
               {activeIndex === freshIndex && <div key={`${active.id}-${hitNonce}`} className={`reveal-burst burst-tier-${rarityTier(active.rarity)}`} aria-hidden="true"><i /><i /><i /><i /><strong>{active.rarity}</strong><b>{rarityTier(active.rarity) >= 4 ? "GODDESS HIT!" : rarityTier(active.rarity) >= 3 ? "JACKPOT PULL!" : rarityTier(active.rarity) >= 2 ? "SHINY!" : ""}<small>{rarityTier(active.rarity) >= 2 ? active.character : ""}</small></b></div>}
               <div className="reveal-index"><b>{String(activeIndex + 1).padStart(2, "0")}</b><span>/ {String(pack.length).padStart(2, "0")}</span><i>CARD</i></div>
-              <PackStack cards={pack.map(card => ({ id: card.id, image: cardImage(card), character: card.character, rarity: card.rarity, color: rarityColor(card.rarity) }))} activeIndex={activeIndex} onNext={nextCard} onPrevious={previousCard} onInspect={() => setInspectorOpen(true)} onPeek={() => { void playPeek(); }} />
+              <PackStack boosterSize={selectedPack?.odds.cardsPerPack || pack.length} cards={pack.map(card => ({ id: card.id, image: cardImage(card), character: card.character, rarity: card.rarity, color: rarityColor(card.rarity) }))} activeIndex={activeIndex} onNext={nextCard} onPrevious={previousCard} onInspect={() => { setInspectorFromSummary(false); setInspectorOpen(true); }} onPeek={() => { void playPeek(); }} />
               <button className="nav-orb nav-previous" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); previousCard(); } }} onClick={(event) => { if (event.detail === 0) previousCard(); }} disabled={activeIndex === 0} aria-label="Vorherige Karte">←</button>
               <button className="nav-orb nav-next" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); nextCard(); } }} onClick={(event) => { if (event.detail === 0) nextCard(); }} aria-label={activeIndex === pack.length - 1 ? "Pack ansehen" : "Nächste Karte"}>→</button>
               <div className="pull-caption" aria-live="polite" aria-atomic="true"><b style={{ color: rarityColor(active.rarity) }}>{active.rarity}</b><span><strong>{active.character || "Unknown character"}</strong><small>{active.title}</small></span></div>
-              <div className="pull-trail" aria-label="Cards in this pack">{pack.map((card, index) => <button key={`${card.id}-${index}`} disabled={index > revealedThrough} aria-label={index <= revealedThrough ? `Card ${index + 1}: ${card.rarity} ${card.character}` : `Card ${index + 1}: unrevealed`} aria-current={index === activeIndex ? "step" : undefined} onClick={() => navigateCard(index)} style={{ "--pull-color": index <= revealedThrough ? rarityColor(card.rarity) : "#604568" } as CSSProperties}><i />{index <= revealedThrough ? card.rarity : "·"}</button>)}</div>
-              <button className="detail-hint" onClick={() => setInspectorOpen(true)}><span>Swipe to reveal · Tap for details</span></button>
+              {packCount === 10 && <div className="batch-reveal-progress"><span>Pack {Math.floor(activeIndex / (selectedPack?.odds.cardsPerPack || 1)) + 1} / 10</span><button onClick={() => { setInspectorOpen(false); setPhase("summary"); }}>Alle ansehen ↗</button></div>}
+              <div className="pull-trail" aria-label="Cards in this pack">{pack.map((card, index) => (packCount === 1 || Math.floor(index / (selectedPack?.odds.cardsPerPack || 1)) === Math.floor(activeIndex / (selectedPack?.odds.cardsPerPack || 1))) && <button key={`${card.id}-${index}`} disabled={index > revealedThrough} aria-label={index <= revealedThrough ? `Card ${index + 1}: ${card.rarity} ${card.character}` : `Card ${index + 1}: unrevealed`} aria-current={index === activeIndex ? "step" : undefined} onClick={() => navigateCard(index)} style={{ "--pull-color": index <= revealedThrough ? rarityColor(card.rarity) : "#604568" } as CSSProperties}><i />{index <= revealedThrough ? card.rarity : "·"}</button>)}</div>
               {activeIndex === freshIndex && rarityTier(active.rarity) >= 3 && <div key={`confetti-${hitNonce}`} className="pull-confetti" aria-hidden="true">{Array.from({ length: 12 }, (_, i) => <i key={i} style={{ "--angle": `${i * 30}deg`, "--flight": `${110 + (i % 3) * 40}px`, "--delay": `${(i % 3) * 35}ms` } as CSSProperties} />)}</div>}
             </div>
           )}
@@ -638,7 +600,7 @@ export default function Home() {
           {mode === "altar" && phase === "summary" && pack.length > 0 && (
             <div className="pack-summary">
               <div className="summary-heading">
-                <span>BOOSTER COMPLETE · {pack.length} CARDS</span>
+                <span>{packCount === 10 ? "10 BOOSTERS COMPLETE" : "BOOSTER COMPLETE"} · {pack.length} CARDS</span>
                 <h1>{selectedPack?.setName}</h1>
                 <p>BEST PULL <b style={{ color: rarityColor(bestPull?.rarity || "R") }}>{bestPull?.rarity}</b><em>{bestPull?.character}</em></p>
                 <div className="summary-value-line">
@@ -650,12 +612,12 @@ export default function Home() {
               <div className={`summary-grid summary-${pack.length}`}>
                 {pack.map((card, index) => (
                   <div key={`${card.id}-${index}`} className="summary-slot" style={{ "--card-color": rarityColor(card.rarity), "--delay": `${index * 45}ms` } as CSSProperties}>
-                    <button className="summary-art" onClick={() => { setActiveIndex(index); setRevealedThrough(pack.length - 1); setFreshIndex(-1); revealedRef.current = pack.length - 1; setDirection(1); setTransitioning(false); setPhase("revealing"); setInspectorOpen(true); }} aria-label={`${card.rarity} ${card.character} anzeigen`}>
+                    <button className="summary-art" onClick={() => { setActiveIndex(index); setRevealedThrough(pack.length - 1); setFreshIndex(-1); revealedRef.current = pack.length - 1; setDirection(1); setTransitioning(false); setPhase("revealing"); setInspectorFromSummary(true); setInspectorOpen(true); }} aria-label={`${card.rarity} ${card.character} anzeigen`}>
                       <img src={cardImage(card)} alt={`${card.rarity}-${card.number} ${card.character}`} /><b>{card.rarity}</b>
                     </button>
                     <div className="summary-meta">
                       <span>{formatYuan(valueFen(card.id, card.rarity))} ¥</span>
-                      <button className="summary-sell" disabled={soldIndexes.has(index)} onClick={() => sellFromPack(index)}>{soldIndexes.has(index) ? "Verkauft" : "Verkaufen"}</button>
+                      <SellButton className="summary-sell" sold={soldIndexes.has(index)} onSell={() => sellFromPack(index)}>Verkaufen</SellButton>
                     </div>
                   </div>
                 ))}
@@ -670,25 +632,25 @@ export default function Home() {
         )}
         {mode === "altar" && (phase !== "sealed" || packChosen) && <div className="action-dock">
           {phase === "sealed" && !canAfford && <p className="funds-hint">Nicht genug Yuan · <Link href="/store">Store</Link></p>}
-          {phase === "sealed" && <button className="primary-action" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); void openPack(); } }} onClick={(event) => { if (event.detail === 0) void openPack(); }} disabled={!dataReady || !canAfford}><span>{usingVoucher ? "RIP WITH VOUCHER" : "RIP THIS BOOSTER"}<small>{selectedPack ? `${selectedPack.cost} ¥` : ""}</small></span><i><AppIcon name="pack" /></i></button>}
+          {phase === "sealed" && <button className="primary-action" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); void openPack(); } }} onClick={(event) => { if (event.detail === 0) void openPack(); }} disabled={!dataReady || !canAfford}><span>{usingVoucher ? "RIP WITH VOUCHER" : "RIP THIS BOOSTER"}<small>{selectedPack ? `${selectedPack.cost * packCount} ¥` : ""}</small></span><i><AppIcon name="pack" /></i></button>}
           {phase === "opening" && <div className="opening-meter"><i /><span>DEALING YOUR CARDS</span></div>}
           {phase === "revealing" && <button className="primary-action next-action" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); nextCard(); } }} onClick={(event) => { if (event.detail === 0) nextCard(); }}><span>{activeIndex === pack.length - 1 ? "SHOW FULL PACK" : "NEXT CARD"}<small>{activeIndex + 1} / {pack.length}</small></span><i><AppIcon name="arrow" /></i></button>}
           {phase === "summary" && <button className="primary-action" onClick={prizeLock ? returnToGame : resetForAnother}><span>{prizeLock ? `BACK TO ${prizeReturnTitle}` : "OPEN ANOTHER"}</span><i><AppIcon name={prizeLock ? "back" : "replay"} /></i></button>}
         </div>}
 
         {mode === "altar" && active && phase === "revealing" && inspectorOpen && (
-          <aside className="card-inspector is-open" aria-hidden={false}>
-            <button className="inspector-close" onClick={() => setInspectorOpen(false)} aria-label="Kartendetails schließen">×</button>
+          <aside className="card-inspector is-open" role="dialog" aria-label="Kartendetails" aria-hidden={false}>
+            <button className="inspector-close" onClick={() => { setInspectorOpen(false); if (inspectorFromSummary) setPhase("summary"); }} aria-label="Kartendetails schließen">×</button>
             <div className="inspector-rarity" style={{ color: rarityColor(active.rarity) }}><span>{active.rarity}</span><i /></div>
             <span className="inspector-kicker">CARD {activeIndex + 1} · {selectedPack?.setName}</span><h2>{active.character || "Unknown Goddess"}</h2><p>{active.title || "Goddess Story"}</p>
             <dl><div><dt>Set</dt><dd>{active.set_name}</dd></div><div><dt>Card no.</dt><dd>{active.number}</dd></div><div><dt>Rarity</dt><dd>{active.rarity}</dd></div><div><dt>Wert</dt><dd>{formatYuan(valueFen(active.id, active.rarity))} ¥</dd></div><div><dt>Position</dt><dd>{activeIndex + 1} / {pack.length}</dd></div></dl>
-            <button className="inspector-sell" disabled={soldIndexes.has(activeIndex)} onClick={() => sellFromPack(activeIndex)}>{soldIndexes.has(activeIndex) ? "Bereits verkauft" : `Für ${formatYuan(valueFen(active.id, active.rarity))} ¥ verkaufen`}</button>
+            <SellButton key={`${active.id}-${activeIndex}`} className="inspector-sell" sold={soldIndexes.has(activeIndex)} onSell={() => sellFromPack(activeIndex)} soldLabel="Bereits verkauft">{`Für ${formatYuan(valueFen(active.id, active.rarity))} ¥ verkaufen`}</SellButton>
             <button className="inspector-next" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); nextCard(); } }} onClick={(event) => { if (event.detail === 0) nextCard(); }}>{activeIndex === pack.length - 1 ? "Pack ansehen" : "Nächste Karte"}<span>→</span></button>
           </aside>
         )}
 
-        <aside className={`pack-drawer ${showMenu ? "is-open" : ""}`} aria-hidden={!showMenu}>
-          <div className="drawer-head"><div><span>GODDESS STORY // PACK MENU</span><b>Choose a booster</b></div><button onClick={() => setShowMenu(false)} aria-label="Pack Vault schließen">×</button></div>
+        {showMenu && <aside className="pack-drawer pack-picker-sheet is-open" role="dialog" aria-modal="true" aria-label="Booster auswählen">
+          <div className="drawer-head"><div><b>Dein nächstes Set</b></div><button onClick={() => setShowMenu(false)} aria-label="Pack Vault schließen">×</button></div>
           {!canChangeSet && <p className="vault-lock">{prizeLock ? "Minigame prizes stay locked until opened." : "Finish this booster first."}</p>}
           <input className="pack-search" type="search" placeholder="Set suchen…" value={search} onChange={(event) => setSearch(event.target.value)} />
           <div className="group-tabs">{groupOptions.map((group) => <button key={group} className={activeGroup === group ? "active" : ""} onClick={() => setGroupFilter(group)}>{groupLabels[group] || group}</button>)}</div>
@@ -696,10 +658,10 @@ export default function Home() {
             {filteredCatalog.map((item) => {
               const record = sets.find((set) => set.name === item.setName);
               const itemCover = cardAsset(record?.images?.[0]);
-              return <button key={item.id} className={`drawer-pack ${selectedPack?.id === item.id ? "is-active" : ""}`} onClick={() => selectPack(item)} disabled={!canChangeSet}>{itemCover ? <img src={itemCover} alt="" /> : <span className="cover-fallback">✦</span>}<span><b>{item.setName}</b><small>{item.odds.cardsPerPack} cards · {item.boostersCount} packs</small></span><em>{item.cost} ¥</em></button>;
+              return <button key={item.id} className={`drawer-pack ${selectedPack?.id === item.id ? "is-active" : ""}`} onClick={() => selectPack(item)} disabled={!canChangeSet}>{itemCover ? <img src={itemCover} alt="" loading="lazy" /> : <span className="cover-fallback">✦</span>}<span><b>{item.setName}</b><small>{item.odds.cardsPerPack} Karten</small></span><em>{item.cost} ¥</em></button>;
             })}
           </div>
-        </aside>
+        </aside>}
         {showMenu && <button className="drawer-backdrop" aria-label="Pack Vault schließen" onClick={() => setShowMenu(false)} />}
       </section>
 
@@ -709,6 +671,7 @@ export default function Home() {
             <button className="modal-close" onClick={() => setShowInfo(false)} aria-label="Schließen">×</button>
             <span className="odds-kicker">PHYSICAL-STYLE COLLATION · {groupLabels[selectedPack.group]}</span><h2 id="odds-title">{selectedPack.setName}</h2><p className="odds-pattern">{recipe.pattern}</p>
             <p className="odds-intro">Jeder Booster wird in festen Positionsgruppen aufgebaut. Die Box-Verteilung läuft unsichtbar im Hintergrund, damit einzelne Packs spannend bleiben und sich trotzdem wie echte Goddess-Story-Produkte verhalten.</p>
+            <p className="ten-pack-odds"><b>10er-Bonus · zweite Chance</b> Jeder Booster im 10er erhält eine 10% Chance auf einen zusätzlichen Roll für seinen letzten variablen Hit-Slot. Die höhere Rarity bleibt; bei gleicher Stufe gewinnt die seltenere Rarity im Set. Kein garantierter Upgrade und keine zusätzlichen Kosten. Die Basiswerte unten gelten für einzelne Booster.</p>
             <div className="odds-grid">{targetRows.map((row) => <div key={row.rarity} style={{ "--chip": rarityColor(row.rarity) } as CSSProperties}><b>{row.rarity}</b><span>Ø {(row.perBox / selectedPack.boostersCount).toLocaleString("de-DE", { maximumFractionDigits: 3 })} pro Booster</span></div>)}</div>
             <div className="collation-notes"><p><b>Keine normalen Doppelbilder:</b> Innerhalb eines Boosters wird jede exakte Karten-ID ohne Zurücklegen gezogen.</p><p><b>Pull order bleibt echt:</b> Base-, Shine- und Hit-Slots werden nicht nach Rarity nachsortiert.</p>{selectedPack.odds.bonus.length > 0 && <p><b>Bonus-Packs:</b> PR/Bonus-Karten bleiben Box-Beigaben und werden nicht künstlich in normale Booster gemischt.</p>}</div>
           </section>

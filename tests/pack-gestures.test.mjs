@@ -47,7 +47,7 @@ test("mobile removes redundant navigation and clears controls behind the pack me
   assert.match(css,/\.mode-altar\.phase-revealing \.action-dock \{ display: none; \}/);
   assert.match(css,/\.mode-altar\.menu-open \.booster-carousel,[\s\S]*?visibility: hidden; pointer-events: none;/);
   assert.match(page,/back-trigger/);
-  assert.match(page,/setPackChosen\(false\); setTearProgress\(0\)/);
+  assert.match(page,/setPackChosen\(false\)/);
   assert.doesNotMatch(page,/Choose a different pack/);
   assert.match(css,/background: color-mix\(in srgb,var\(--edge-color\) 72%,#ded5e2\)/);
 });

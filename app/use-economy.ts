@@ -11,6 +11,7 @@ import {
   economyFromSnapshot,
   emptyPriceTable,
   finalizeOpenedPack,
+  finalizeOpenedPacks,
   parseCardValuesCsv,
   parseRarityValues,
   readEconomySnapshot,
@@ -58,6 +59,12 @@ export function useEconomy() {
 
   const openPack = useCallback((costYuan: number, cardIds: number[]) => {
     const result = finalizeOpenedPack(economyFromSnapshot(readEconomySnapshot()), costYuan, cardIds);
+    if (result.ok) writeStoredEconomy(result.state);
+    return result;
+  }, []);
+
+  const openPacks = useCallback((costYuan: number, packs: number[][]) => {
+    const result = finalizeOpenedPacks(economyFromSnapshot(readEconomySnapshot()), costYuan, packs);
     if (result.ok) writeStoredEconomy(result.state);
     return result;
   }, []);
@@ -111,6 +118,7 @@ export function useEconomy() {
     prices,
     valueFen,
     openPack,
+    openPacks,
     sell,
     trade,
     creditTopup,

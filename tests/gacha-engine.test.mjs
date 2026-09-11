@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   compilePackRecipe,
+  applyTenPackBonus,
   createCollationState,
   drawPackRarities,
   isCollationStateValid,
@@ -91,4 +92,64 @@ test("all 47 configurations compile to complete ordered boosters", () => {
       state = draw.state;
     }
   }
+});
+
+
+test("ten-pack second chance improves only the final hit and never consumes the box queue", () => {
+  const { recipe, state } = openBox("NS-03", 10);
+  const saved = structuredClone(state);
+  const base = ["R","R","R","R","SR"];
+  const rolls = [0,.99];
+  const bonus = applyTenPackBonus(base,recipe,10,()=>rolls.shift());
+  assert.deepEqual(bonus.rarities,["R","R","R","R","SSR"]);
+  assert.equal(bonus.boostedIndex,4);
+  assert.deepEqual(base,["R","R","R","R","SR"]);
+  assert.deepEqual(state,saved);
+  assert.deepEqual(applyTenPackBonus(["R","R","R","R","SSR"],recipe,10,()=>0).rarities,["R","R","R","R","SSR"]);
+  assert.equal(applyTenPackBonus(base,recipe,10,()=>.1).rarities,base);
+  assert.equal(applyTenPackBonus(base,recipe,1,()=>{throw Error("single packs must not roll a bonus");}).rarities,base);
+});
+
+test("10% second chance gives a modest measured boost to a 20% SSR hit", () => {
+  const { recipe }=openBox("NS-03",3);
+  const random=seeded(303);
+  let ordinary=0, boosted=0;
+  for(let i=0;i<100000;i++) {
+    const hit=random()<.2 ? "SSR" : "SR";
+    ordinary+=Number(hit==="SSR");
+    boosted+=Number(applyTenPackBonus(["R","R","R","R",hit],recipe,10,random).rarities[4]==="SSR");
+  }
+  assert.ok(boosted>ordinary);
+  assert.ok(Math.abs(boosted/100000-.216)<.004,`measured ${boosted/100000}`);
+});
+
+test("same-tier premium rolls keep the less frequent rarity in that set", () => {
+  const recipe={zones:[{fixed:[],laneId:"hit",order:"fixed"}],lanes:[{id:"hit",slotsPerPack:1,targets:[{rarity:"MR",target:9},{rarity:"GP",target:1}]}]};
+  let rolls=[0,.99];
+  assert.deepEqual(applyTenPackBonus(["MR"],recipe,10,()=>rolls.shift()).rarities,["GP"]);
+  assert.deepEqual(applyTenPackBonus(["GP"],recipe,10,()=>0).rarities,["GP"]);
+});
+
+
+test("opening flashes use each recipe's actual rarity frequency", async () => {
+  const { boosterGlow, cardFinish } = await import("../app/pack-presentation.ts");
+  const recipe = { zones: [{fixed:["R", "SR"]}], lanes: [{slotsPerPack:1, targets:[{rarity:"SSR",target:70},{rarity:"MR",target:20},{rarity:"UR",target:8},{rarity:"GP",target:2}]}] };
+  assert.equal(boosterGlow(["R","SR","SSR"],recipe),0);
+  assert.equal(boosterGlow(["R","MR"],recipe),1);
+  assert.equal(boosterGlow(["R","UR"],recipe),2);
+  assert.equal(boosterGlow(["R","GP"],recipe),3);
+  assert.equal(boosterGlow([],recipe),0);
+  assert.equal(boosterGlow(["GP"],{...recipe,zones:[{fixed:["GP"]}]}),0);
+  assert.deepEqual(["R","SR","SSR","UR","ZR"].map(cardFinish),[0,1,2,3,4]);
+});
+
+
+test("pack shine identifies PTR independently from rarity-frequency intensity", async () => {
+  const { boosterShine } = await import("../app/pack-presentation.ts");
+  const recipe = { zones: [{fixed:["R"]}], lanes: [{slotsPerPack:1,targets:[{rarity:"SSR",target:80},{rarity:"PTR",target:2},{rarity:"MR",target:18}]}] };
+  assert.equal(boosterShine(["R","SSR","PTR"],recipe).rarity,"PTR");
+  assert.equal(boosterShine(["R","SSR","PTR"],recipe).level,3);
+  assert.equal(boosterShine(["R","SSR"],recipe).rarity,"SSR");
+  assert.equal(boosterShine(["R"],recipe).rarity,undefined);
+  assert.equal(boosterShine(["R"],recipe).level,0);
 });

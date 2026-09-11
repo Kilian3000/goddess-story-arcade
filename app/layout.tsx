@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { arcadeConfig } from "./arcade-config";
 import "./globals.css";
+import { BackgroundMusic } from "./background-music";
 
 export const metadata: Metadata = {
   metadataBase: new URL(arcadeConfig.siteUrl),
@@ -29,7 +30,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="de">
-      <body>{children}</body>
+      <body><BackgroundMusic />{children}</body>
     </html>
   );
 }

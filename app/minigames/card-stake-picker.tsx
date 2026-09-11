@@ -53,6 +53,7 @@ export function CardStakePicker({
   const [columns, setColumns] = useState(6);
   const [page, setPage] = useState(0);
   const [query, setQuery] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [sort, setSort] = useState<SortKey>("value-desc");
   const [dupesOnly, setDupesOnly] = useState(false);
   const [singlesOnly, setSinglesOnly] = useState(false);
@@ -133,7 +134,8 @@ export function CardStakePicker({
 
   return (
     <div className="stake-picker" ref={boxRef}>
-      <div className="stake-toolbar">
+      <div className={`stake-toolbar${filtersOpen ? " is-expanded" : ""}`}>
+        <button className="stake-filter-toggle" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(!filtersOpen)}>Filter{rarity !== "all" || dupesOnly || singlesOnly ? " · aktiv" : ""} {filtersOpen ? "−" : "+"}</button>
         <input
           className="stake-search"
           type="search"

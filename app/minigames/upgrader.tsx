@@ -119,9 +119,9 @@ export function UpgraderTable({ rows, catalog, valueFen, takeCards, grantCards, 
 
   return (
     <GameFrame eyebrow="CARDS · RISK UP" title={<>UPGRAD<i>ER</i></>}>
-      <p className="minigame-copy">
+      <details className="game-rules"><summary>Spielregeln</summary><p>
         Setze eine Karte, stelle die Wunschchance ein und nimm ein Ziel aus der passenden Reihe. Über die Suche findest du ein konkretes Upgrade nach Charakter, Titel oder Set.
-      </p>
+      </p></details>
       <CardStakePicker rows={rows} selected={status === "idle" ? selected : []} onChange={setSelected} max={1} disabled={status !== "idle"} />
       {stake && (
         <div className="upgrade-target">

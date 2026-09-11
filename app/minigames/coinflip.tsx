@@ -102,9 +102,9 @@ export function CoinflipTable({ rows, catalog, valueFen, takeCards, grantCards, 
 
   return (
     <GameFrame eyebrow="CARDS · CLASS CALL" title={<>COIN<i>FLIP</i></>}>
-      <p className="minigame-copy">
+      <details className="game-rules"><summary>Spielregeln</summary><p>
         Ein Bot spielt immer dagegen. Die Klasse bestimmt seinen Einsatz der nächsten Runde — du siehst die Karten schon, bevor du matchst. Mehrere Karten sind erlaubt; die Chance folgt den Beträgen.
-      </p>
+      </p></details>
       <TableTiers value={tierId} onChange={setTierId} disabled={status === "flipping"} playUiTap={playUiTap} label="Coinflip-Klasse" />
       <aside className={`coin-bot${closeMatch ? " is-match" : ""}`} aria-live="polite">
         <div className="coin-duel">

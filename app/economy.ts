@@ -354,6 +354,25 @@ export function finalizeOpenedPack(state: EconomyState, costYuan: number, cardId
   };
 }
 
+// Build the entire purchase in memory; callers persist only a successful batch.
+export function canOpenPacks(state: EconomyState, costYuan: number, count: number) {
+  if (!Number.isInteger(count) || count < 1 || count > 10) return false;
+  const voucher = voucherForCost(costYuan);
+  const paid = Math.max(0, count - (voucher ? state.vouchers[voucher] : 0));
+  return costYuan > 0 && Number.isFinite(costYuan) && state.balanceFen >= yuanToFen(costYuan) * paid;
+}
+
+export function finalizeOpenedPacks(state: EconomyState, costYuan: number, packs: number[][]) {
+  if (!canOpenPacks(state, costYuan, packs.length) || packs.some(pack => !pack.length)) return { ok: false as const };
+  let next = state;
+  for (const cards of packs) {
+    const result = finalizeOpenedPack(next, costYuan, cards);
+    if (!result.ok) return { ok: false as const };
+    next = result.state;
+  }
+  return { ok: true as const, state: next };
+}
+
 export function sellCard(state: EconomyState, cardId: number, valueFen: number) {
   const key = String(cardId);
   const count = state.cards[key] || 0;

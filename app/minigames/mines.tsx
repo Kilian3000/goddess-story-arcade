@@ -68,7 +68,7 @@ export function MinesTable({ balanceFen, spend, credit, onPulse, playUiTap, play
 
   return (
     <GameFrame eyebrow="HOUSE · 5×5 FIELD" title={<>MIN<i>ES</i></>}>
-      <p className="minigame-copy">Decke sichere Felder auf. Eine Mine beendet die Runde. Cash out, bevor du daneben tippst.</p>
+      <details className="game-rules"><summary>Spielregeln</summary><p>Decke sichere Felder auf. Eine Mine beendet die Runde. Cash out, bevor du daneben tippst.</p></details>
       <YuanStake valueYuan={stakeYuan} onChange={setStakeYuan} balanceFen={balanceFen} disabled={status !== "idle"} />
       <label className="mines-count">
         <span>MINEN {mineCount}</span>

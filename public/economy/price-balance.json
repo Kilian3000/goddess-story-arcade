@@ -1,0 +1,29 @@
+{
+  "version": 2,
+  "boxesPerBooster": 512,
+  "targetReturnByCost": {
+    "1": 1.42,
+    "2": 1.25,
+    "5": 1.2,
+    "10": 1.17,
+    "20": 1.15
+  },
+  "jackpotCapYuanByCost": {
+    "1": 35,
+    "2": 75,
+    "5": 175,
+    "10": 350,
+    "20": 650
+  },
+  "defaultJackpotCapYuan": 650,
+  "rarityValueBoostBySet": {
+    "NNS-02": {
+      "JNH": 3,
+      "SD": 3,
+      "GP": 3,
+      "PTR": 15,
+      "RDM": 50
+    }
+  },
+  "minimumCardValueYuan": 0.01
+}

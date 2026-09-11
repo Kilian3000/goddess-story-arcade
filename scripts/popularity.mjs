@@ -1,5 +1,5 @@
 export const POPULARITY_TIERS = ["common", "rare", "epic", "legendary", "mythic"];
-export const CARD_VALUES_HEADER = "id,set_name,number,rarity,character,title,popularity,popularity_factor,value_yuan";
+export const CARD_VALUES_HEADER = "id,set_name,number,rarity,character,title,popularity,popularity_factor,raw_value_yuan,balance_factor,value_yuan";
 
 const TIER_RANK = {
   common: 0,
@@ -57,6 +57,12 @@ export function popularityFactor(cardId, tier, rules) {
 
 export function cardValueYuan(baseYuan, factor) {
   return Math.round(Number(baseYuan) * Number(factor) * 100) / 100;
+}
+
+export function balancedCardValueYuan(rawYuan, balanceFactor, minimumYuan, maximumYuan) {
+  const scaled = Number(rawYuan) * Number(balanceFactor);
+  const bounded = Math.max(Number(minimumYuan), Math.min(Number(maximumYuan), scaled));
+  return Math.round(bounded * 100) / 100;
 }
 
 export function listedRuleTitles(rules) {

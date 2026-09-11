@@ -1,10 +1,10 @@
 {
   "ranges": {
     "common": [1, 1.05],
-    "rare": [1.5, 2],
-    "epic": [3, 5],
-    "legendary": [10, 20],
-    "mythic": [50, 100]
+    "rare": [1.2, 1.5],
+    "epic": [1.75, 2.5],
+    "legendary": [4.5, 8],
+    "mythic": [14, 26]
   },
   "rareTitles": [
     "Akame Ga Kill!",

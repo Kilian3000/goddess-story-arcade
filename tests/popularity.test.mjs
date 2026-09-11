@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   CARD_VALUES_HEADER,
+  balancedCardValueYuan,
   cardValueYuan,
   listedRuleTitles,
   missingRuleTitles,
@@ -13,6 +14,8 @@ import {
 
 const rules = JSON.parse(await readFile(new URL("../public/economy/popularity-rules.json", import.meta.url), "utf8"));
 const rarityFile = JSON.parse(await readFile(new URL("../public/economy/rarity-values.json", import.meta.url), "utf8"));
+const balanceFile = JSON.parse(await readFile(new URL("../public/economy/price-balance.json", import.meta.url), "utf8"));
+const packFile = JSON.parse(await readFile(new URL("../public/pack-configs.json", import.meta.url), "utf8"));
 const csv = await readFile(new URL("../public/economy/card-values.csv", import.meta.url), "utf8");
 const source = await readFile(new URL("../public/card-data/db.js", import.meta.url), "utf8");
 const database = JSON.parse(source.trim().replace(/^window\.CARD_LISTER_DB\s*=\s*/, "").replace(/;\s*$/, ""));
@@ -54,17 +57,23 @@ test("popularity factors stay stable and stay inside the two-decimal range", () 
   );
 
   const epic = popularityFactor(9789, "epic", rules);
-  assert.ok(epic >= 3 && epic <= 5);
+  assert.ok(epic >= 1.75 && epic <= 2.5);
   assert.equal(epic, Number(epic.toFixed(2)));
 
   const mythic = popularityFactor(9789, "mythic", rules);
-  assert.ok(mythic >= 50 && mythic <= 100);
+  assert.ok(mythic >= 14 && mythic <= 26);
 });
 
 test("card value is the rarity base times the rounded popularity factor", () => {
   assert.equal(cardValueYuan(2.5, 3.81), 9.53);
   assert.equal(cardValueYuan(0.01, 1.03), 0.01);
   assert.equal(cardValueYuan(0.01, 1.5), 0.02);
+});
+
+test("balanced values apply a floor, a set factor, and a jackpot cap", () => {
+  assert.equal(balancedCardValueYuan(10, 1.25, 0.01, 20), 12.5);
+  assert.equal(balancedCardValueYuan(0.001, 0.1, 0.01, 20), 0.01);
+  assert.equal(balancedCardValueYuan(100, 2, 0.01, 20), 20);
 });
 
 test("every popularity rule title exists in the catalog", () => {
@@ -83,20 +92,41 @@ test("generated CSV stores a stable popularity price for every card", () => {
   const rarityIndex = header.indexOf("rarity");
   const popularityIndex = header.indexOf("popularity");
   const factorIndex = header.indexOf("popularity_factor");
+  const rawValueIndex = header.indexOf("raw_value_yuan");
+  const balanceIndex = header.indexOf("balance_factor");
   const valueIndex = header.indexOf("value_yuan");
+  const setIndex = header.indexOf("set_name");
+  const packBySet = new Map(packFile.packs.map((pack) => [pack.setName, pack]));
 
   for (const cols of rows.slice(1)) {
     const id = Number(cols[idIndex]);
     const rarity = cols[rarityIndex];
     const popularity = cols[popularityIndex];
     const factor = Number(cols[factorIndex]);
+    const rawValue = Number(cols[rawValueIndex]);
+    const balanceFactor = Number(cols[balanceIndex]);
     const value = Number(cols[valueIndex]);
     const expectedFactor = popularityFactor(id, popularity, rules);
-    const expectedValue = cardValueYuan(rarityFile.values[rarity] ?? rarityFile.fallbackYuan, expectedFactor);
+    const rarityBoost = balanceFile.rarityValueBoostBySet?.[cols[setIndex]]?.[rarity] ?? 1;
+    const expectedRawValue = cardValueYuan(
+      (rarityFile.values[rarity] ?? rarityFile.fallbackYuan) * rarityBoost,
+      expectedFactor,
+    );
+    const pack = packBySet.get(cols[setIndex]);
+    const cap = balanceFile.jackpotCapYuanByCost[String(pack?.cost)]
+      ?? balanceFile.defaultJackpotCapYuan
+      ?? Number.POSITIVE_INFINITY;
+    const expectedValue = balancedCardValueYuan(
+      expectedRawValue,
+      balanceFactor,
+      balanceFile.minimumCardValueYuan,
+      cap,
+    );
     const [min, max] = rules.ranges[popularity];
 
     assert.equal(factor, expectedFactor);
     assert.equal(cols[factorIndex], expectedFactor.toFixed(2));
+    assert.equal(rawValue, expectedRawValue);
     assert.equal(value, expectedValue);
     assert.ok(factor >= min && factor <= max, `${id} ${popularity} ${factor}`);
   }

@@ -134,7 +134,7 @@ test("rarity table covers the bundled catalog and the CSV lists every card", asy
     assert.ok(rarity in rarityFile.values, `missing rarity price for ${rarity}`);
   }
   const rows = csv.trim().split("\n");
-  assert.equal(rows[0], "id,set_name,number,rarity,character,title,popularity,popularity_factor,value_yuan");
+  assert.equal(rows[0], "id,set_name,number,rarity,character,title,popularity,popularity_factor,raw_value_yuan,balance_factor,value_yuan");
   assert.equal(rows.length - 1, database.cards.length);
 });
 

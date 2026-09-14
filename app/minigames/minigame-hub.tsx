@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { Card } from "../card-types";
 import type { PackConfig } from "../gacha-engine";
 import type { WaifuMuse } from "../lucky-shrine";
@@ -54,7 +54,6 @@ export function MinigameHub({
   playStart,
   playLoss,
 }: Props) {
-  const [pickerOpen, setPickerOpen] = useState(false);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const railRef = useRef<HTMLElement | null>(null);
   const activeGameRef = useRef<HTMLButtonElement | null>(null);
@@ -92,9 +91,8 @@ export function MinigameHub({
   }, [activeGame]);
 
   return (
-    <div className={`minigame-hub${pickerOpen ? " picker-open" : ""}`}>
-      <button className="mobile-game-picker" aria-expanded={pickerOpen} aria-controls="minigame-picker" onClick={() => setPickerOpen(!pickerOpen)}><AppIcon name={MINIGAME_ICONS[activeGame]} /><span><small>ARCADE</small><b>{minigameById(activeGame)?.title}</b></span><em>{pickerOpen ? "Schließen ×" : "Spiel wechseln ▾"}</em></button>
-      <nav id="minigame-picker" ref={railRef} className="minigame-rail" aria-label="Minispiele">
+    <div className="minigame-hub">
+      <nav ref={railRef} className="minigame-rail" aria-label="Minispiele">
         {MINIGAME_GROUPS.map((group) => (
           <div key={group.id} className={`minigame-rail-group kind-${group.id}`}>
             <small>{group.label}</small>
@@ -108,7 +106,7 @@ export function MinigameHub({
                   type="button"
                   className={activeGame === id ? "is-active" : ""}
                   aria-current={activeGame === id ? "page" : undefined}
-                  onClick={() => { void playUiTap(); onSelectGame(id); setPickerOpen(false); }}
+                  onClick={() => { void playUiTap(); onSelectGame(id); }}
                 >
                   <i><AppIcon name={MINIGAME_ICONS[game.id]} /></i>
                   <b>{game.title}</b>

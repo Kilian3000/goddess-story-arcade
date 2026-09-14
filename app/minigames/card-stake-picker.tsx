@@ -36,6 +36,20 @@ export function stakeValueFen(rows: StakeCard[], selected: number[]) {
   return selected.reduce((sum, id) => sum + (values.get(id) || 0), 0);
 }
 
+export function StakeStrip({ cards, empty }: { cards: Card[]; empty?: string }) {
+  if (!cards.length) return empty ? <p className="stake-empty">{empty}</p> : null;
+  return (
+    <ul className="pot-strip">
+      {cards.map((card, index) => (
+        <li key={`${card.id}-${index}`} style={{ "--card-color": rarityColor(card.rarity) } as CSSProperties}>
+          <img src={cardAsset(card.image_path)} alt="" />
+          <span>{card.character}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function columnsForWidth(width: number) {
   if (width <= 0) return 6;
   return Math.max(2, Math.floor((width + COL_GAP) / (COL_MIN + COL_GAP)));

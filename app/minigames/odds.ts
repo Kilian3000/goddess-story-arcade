@@ -3,7 +3,7 @@ export const CRASH_INSTANT_BUST = 0.01;
 export const MINES_TILES = 25;
 export const MINES_HOUSE = 0.96;
 export const JACKPOT_RAKE = 0.96;
-export const COINFLIP_WIN_CHANCE = 0.48;
+export const COINFLIP_WIN_CHANCE = 0.5;
 export const UPGRADER_HOUSE = 0.95;
 export const ROULETTE_GREEN_PAYOUT = 14;
 export const ROULETTE_COLOR_PAYOUT = 2;
@@ -89,6 +89,32 @@ export function jackpotWeights(values: number[], playerIndex = 0) {
   return values.map((value, index) => (index === playerIndex ? value * JACKPOT_RAKE : value));
 }
 
+export const JACKPOT_PLAYER_COLOR = "#f7ff4a";
+
+export const JACKPOT_SEAT_COLORS = [
+  "#ff2e9a",
+  "#00ecff",
+  "#3d7bff",
+  "#7df0b3",
+  "#ac88ff",
+  "#ff6a3d",
+  "#ff4d6d",
+] as const;
+
+export function assignJackpotColors(count: number, reserved: readonly string[], random: RandomSource) {
+  const taken = new Set(reserved.map((color) => color.toLowerCase()));
+  const pool = JACKPOT_SEAT_COLORS.filter((color) => !taken.has(color.toLowerCase()));
+  for (let index = pool.length - 1; index > 0; index -= 1) {
+    const other = Math.floor(random() * (index + 1));
+    [pool[index], pool[other]] = [pool[other], pool[index]];
+  }
+  return Array.from({ length: Math.max(0, count) }, (_, index) => {
+    const next = pool[index];
+    if (next) return next;
+    return `hsl(${(index * 47 + 18) % 360} 86% 56%)`;
+  });
+}
+
 export const JACKPOT_TIERS = [
   { id: "street", title: "STREET CLASS", blurb: "loose change", botMinFen: 20, botMaxFen: 200, botsMin: 2, botsMax: 4 },
   { id: "club", title: "CLUB CLASS", blurb: "neon chips", botMinFen: 200, botMaxFen: 800, botsMin: 2, botsMax: 5 },
@@ -114,10 +140,77 @@ export function jackpotBotTargetFen(tier: JackpotTier, random: RandomSource) {
 
 export type ValueCard = { id: number; valueFen: number };
 
+export const COINFLIP_MAX_CARDS = 2;
+export const COINFLIP_MATCH_RATIO = 0.15;
+export const COINFLIP_MATCH_ABS_FEN = 20;
+
+export type CoinflipMatch = {
+  ids: number[];
+  valueFen: number;
+  cards: number;
+  delta: number;
+  even: boolean;
+};
+
+const EMPTY_COINFLIP_MATCH: CoinflipMatch = {
+  ids: [],
+  valueFen: 0,
+  cards: 0,
+  delta: 0,
+  even: false,
+};
+
+export function coinflipIsEven(playerFen: number, botFen: number) {
+  if (playerFen <= 0 || botFen <= 0) return false;
+  const gap = Math.abs(playerFen - botFen);
+  return gap <= COINFLIP_MATCH_ABS_FEN || gap / playerFen <= COINFLIP_MATCH_RATIO;
+}
+
 export function coinflipChance(playerFen: number, botFen: number) {
-  const pot = playerFen + botFen;
   if (playerFen <= 0 || botFen <= 0) return 0;
-  return (playerFen / pot) * JACKPOT_RAKE;
+  if (coinflipIsEven(playerFen, botFen)) return COINFLIP_WIN_CHANCE;
+  return (playerFen / (playerFen + botFen)) * JACKPOT_RAKE;
+}
+
+export function matchCoinflipStake(candidates: readonly ValueCard[], targetFen: number): CoinflipMatch {
+  if (targetFen <= 0) return EMPTY_COINFLIP_MATCH;
+  const pool = candidates.filter((card) => card.valueFen > 0);
+  if (!pool.length) return EMPTY_COINFLIP_MATCH;
+
+  const score = (ids: number[], valueFen: number): CoinflipMatch => ({
+    ids,
+    valueFen,
+    cards: ids.length,
+    delta: Math.abs(valueFen - targetFen),
+    even: coinflipIsEven(targetFen, valueFen),
+  });
+
+  let bestOne = pool[0];
+  for (const card of pool) {
+    const closer = Math.abs(card.valueFen - targetFen) < Math.abs(bestOne.valueFen - targetFen);
+    const sameAndRicher = Math.abs(card.valueFen - targetFen) === Math.abs(bestOne.valueFen - targetFen)
+      && card.valueFen > bestOne.valueFen;
+    if (closer || sameAndRicher) bestOne = card;
+  }
+  const one = score([bestOne.id], bestOne.valueFen);
+  if (one.even) return one;
+
+  const sorted = [...pool].sort((left, right) => left.valueFen - right.valueFen || left.id - right.id);
+  let bestTwo: CoinflipMatch | null = null;
+  let left = 0;
+  let right = sorted.length - 1;
+  while (left < right) {
+    const valueFen = sorted[left].valueFen + sorted[right].valueFen;
+    const two = score([sorted[left].id, sorted[right].id], valueFen);
+    if (!bestTwo || two.delta < bestTwo.delta || (two.delta === bestTwo.delta && two.valueFen > bestTwo.valueFen)) {
+      bestTwo = two;
+    }
+    if (valueFen < targetFen) left += 1;
+    else if (valueFen > targetFen) right -= 1;
+    else break;
+  }
+  if (bestTwo && (bestTwo.even || bestTwo.delta < one.delta)) return bestTwo;
+  return one;
 }
 
 export function dealClassStake(

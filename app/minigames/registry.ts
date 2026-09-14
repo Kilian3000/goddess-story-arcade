@@ -18,7 +18,7 @@ export const MINIGAMES: MinigameDefinition[] = [
   { id: "roulette", title: "ROULETTE", blurb: "0–14 wheel", kind: "house" },
   { id: "mines", title: "MINES", blurb: "pick or bust", kind: "house" },
   { id: "jackpot", title: "JACKPOT", blurb: "winner takes the pot", kind: "cards" },
-  { id: "coinflip", title: "COINFLIP", blurb: "match the class bot", kind: "cards" },
+  { id: "coinflip", title: "COINFLIP", blurb: "even 1–2 card call", kind: "cards" },
   { id: "upgrader", title: "UPGRADER", blurb: "pick your chance", kind: "cards" },
 ];
 

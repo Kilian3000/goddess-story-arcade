@@ -10,9 +10,14 @@ import {
   ROULETTE_ORDER,
   UPGRADER_HOUSE,
   coinflipChance,
+  coinflipIsEven,
+  matchCoinflipStake,
+  assignJackpotColors,
   combinations,
   crashPoint,
   dealClassStake,
+  JACKPOT_PLAYER_COLOR,
+  JACKPOT_SEAT_COLORS,
   jackpotBotCount,
   jackpotBotTargetFen,
   jackpotChance,
@@ -75,7 +80,7 @@ test("card tables keep a rake under even value", () => {
   assert.equal(pickWeightedIndex([0, 10], () => 0.1), 1);
   assert.equal(upgraderChance(100, 200), 0.475);
   assert.equal(upgraderChance(1000, 100), UPGRADER_HOUSE);
-  assert.equal(COINFLIP_WIN_CHANCE, 0.48);
+  assert.equal(COINFLIP_WIN_CHANCE, 0.5);
   assert.deepEqual(pickCardsForValue([{ id: 7, valueFen: 80 }], 100, () => 0), [7]);
 });
 
@@ -94,10 +99,61 @@ test("jackpot tables are five named classes with rising bot caps", () => {
   assert.equal(jackpotTierById("missing").id, "street");
 });
 
-test("coinflip chance follows pot share with the same rake", () => {
-  assert.equal(coinflipChance(100, 100), 0.48);
+test("jackpot seats never reuse a color", () => {
+  const colors = assignJackpotColors(6, [JACKPOT_PLAYER_COLOR], () => 0.4);
+  assert.equal(colors.length, 6);
+  assert.equal(new Set(colors).size, 6);
+  assert.ok(!colors.includes(JACKPOT_PLAYER_COLOR));
+  assert.equal(new Set(JACKPOT_SEAT_COLORS).size, JACKPOT_SEAT_COLORS.length);
+  assert.ok(!JACKPOT_SEAT_COLORS.includes(JACKPOT_PLAYER_COLOR));
+});
+
+test("coinflip chance is even when the bot matches, otherwise pot share", () => {
+  assert.equal(coinflipChance(100, 100), COINFLIP_WIN_CHANCE);
+  assert.equal(coinflipChance(100, 112), COINFLIP_WIN_CHANCE);
   assert.equal(coinflipChance(1000, 2000), (1000 / 3000) * JACKPOT_RAKE);
   assert.equal(coinflipChance(0, 100), 0);
+  assert.equal(coinflipIsEven(100, 115), true);
+  assert.equal(coinflipIsEven(100, 140), false);
+});
+
+test("coinflip bot answers with 1–2 cards near the player stake", () => {
+  const one = matchCoinflipStake([
+    { id: 1, valueFen: 40 },
+    { id: 2, valueFen: 98 },
+    { id: 3, valueFen: 400 },
+  ], 100);
+  assert.deepEqual(one.ids, [2]);
+  assert.equal(one.cards, 1);
+  assert.equal(one.even, true);
+
+  const richerSingle = matchCoinflipStake([
+    { id: 1, valueFen: 50 },
+    { id: 2, valueFen: 50 },
+    { id: 3, valueFen: 110 },
+  ], 100);
+  assert.deepEqual(richerSingle.ids, [3]);
+  assert.equal(richerSingle.cards, 1);
+
+  const pair = matchCoinflipStake([
+    { id: 1, valueFen: 40 },
+    { id: 2, valueFen: 60 },
+    { id: 3, valueFen: 400 },
+  ], 100);
+  assert.equal(pair.cards, 2);
+  assert.deepEqual([...pair.ids].sort((left, right) => left - right), [1, 2]);
+  assert.equal(pair.even, true);
+
+  const pile = matchCoinflipStake([
+    { id: 1, valueFen: 12 },
+    { id: 2, valueFen: 15 },
+    { id: 3, valueFen: 18 },
+    { id: 4, valueFen: 95 },
+  ], 100);
+  assert.deepEqual(pile.ids, [4]);
+  assert.equal(pile.cards, 1);
+
+  assert.deepEqual(matchCoinflipStake([], 100).ids, []);
   const lounge = jackpotTierById("lounge");
   const dealt = dealClassStake([
     { id: 1, valueFen: 900 },

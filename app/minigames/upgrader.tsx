@@ -118,67 +118,101 @@ export function UpgraderTable({ rows, catalog, valueFen, takeCards, grantCards, 
   };
 
   return (
-    <GameFrame eyebrow="CARDS · RISK UP" title={<>UPGRAD<i>ER</i></>}>
+    <GameFrame
+      eyebrow="CARDS · RISK UP"
+      title={<>UPGRAD<i>ER</i></>}
+      stakeLabel="Karte setzen"
+      table={(
+        <>
+          <div className="upgrade-arena">
+            <div className={`upgrade-slot${stake ? "" : " is-empty"}`}>
+              <small>RISK</small>
+              {stake ? (
+                <>
+                  <img src={cardAsset(stake.card.image_path)} alt="" />
+                  <b style={{ color: rarityColor(stake.card.rarity) }}>{stake.card.rarity}</b>
+                  <strong>{stake.card.character}</strong>
+                  <em>{formatYuan(stakeFen)} ¥</em>
+                </>
+              ) : <p>Unten eine Karte setzen.</p>}
+            </div>
+            <div className="upgrade-call">
+              <label className="upgrade-chance">
+                <span>WUNSCHCHANCE · {desiredPct}%</span>
+                <input
+                  type="range"
+                  min={5}
+                  max={90}
+                  step={1}
+                  value={desiredPct}
+                  disabled={status !== "idle"}
+                  onChange={(event) => setDesiredPct(Number(event.target.value))}
+                />
+                <small>{stakeFen ? `Beste Treffer um ${formatYuan(idealFen)} ¥` : "Zuerst eine Karte setzen."}</small>
+              </label>
+              <p className="stake-summary">
+                {target && chance
+                  ? `${stake?.card.character || "—"} → ${target.card.character} · ${Math.round(chance * 100)}%`
+                  : "Chance einstellen, Ziel wählen, dann rollen."}
+              </p>
+              <div className="minigame-actions">
+                {status === "idle" && <button type="button" className="minigame-go" disabled={!stake || !target || !chance} onClick={roll}>ROLL {chance ? `${Math.round(chance * 100)}%` : ""}</button>}
+                {status === "rolling" && <span className="minigame-wait">ROLLING…</span>}
+                {status === "win" && <button type="button" className="minigame-go" onClick={reset}>UPGRADED · AGAIN</button>}
+                {status === "loss" && <button type="button" className="minigame-go" onClick={reset}>BURNED · AGAIN</button>}
+              </div>
+            </div>
+            <div className={`upgrade-slot${target ? "" : " is-empty"}`}>
+              <small>ZIEL</small>
+              {target ? (
+                <>
+                  <img src={cardAsset(target.card.image_path)} alt="" />
+                  <b style={{ color: rarityColor(target.card.rarity) }}>{target.card.rarity}</b>
+                  <strong>{target.card.character}</strong>
+                  <em>{formatYuan(target.valueFen)} ¥ · {Math.round(target.chance * 100)}%</em>
+                </>
+              ) : <p>{stake ? "Kein Ziel in der Nähe dieser Chance." : "Ziel erscheint nach dem Einsatz."}</p>}
+            </div>
+          </div>
+          <div className="upgrade-target">
+            <label>
+              <span>SUCHE · Charakter, Anime-Titel, Set</span>
+              <input
+                className="stake-search"
+                type="search"
+                placeholder="z. B. Makima, Genshin, NS-05…"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                disabled={status !== "idle" || !stake}
+              />
+            </label>
+            {!stake ? (
+              <p className="stake-empty">Setze unten eine Karte, dann erscheinen passende Ziele.</p>
+            ) : targets.length === 0 ? (
+              <p className="stake-empty">{query ? "Kein teureres Upgrade zu dieser Suche." : "Kein teureres Ziel in der Nähe dieser Chance."}</p>
+            ) : (
+              <ul className="upgrade-row" aria-label="Passende Upgrade-Ziele">
+                {targets.map((row) => (
+                  <li key={row.id}>
+                    <button type="button" className={target?.id === row.id ? "is-active" : ""} disabled={status !== "idle"} onClick={() => chooseTarget(row.id)}>
+                      <img src={cardAsset(row.card.image_path)} alt="" />
+                      <b style={{ color: rarityColor(row.card.rarity) }}>{row.card.rarity}</b>
+                      <strong>{row.card.character}</strong>
+                      <small>{row.card.title || row.card.set_name}</small>
+                      <em>{formatYuan(row.valueFen)} ¥ · {Math.round(row.chance * 100)}%</em>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </>
+      )}
+      stake={<CardStakePicker rows={rows} selected={status === "idle" ? selected : []} onChange={setSelected} max={1} disabled={status !== "idle"} />}
+    >
       <details className="game-rules"><summary>Spielregeln</summary><p>
         Setze eine Karte, stelle die Wunschchance ein und nimm ein Ziel aus der passenden Reihe. Über die Suche findest du ein konkretes Upgrade nach Charakter, Titel oder Set.
       </p></details>
-      <CardStakePicker rows={rows} selected={status === "idle" ? selected : []} onChange={setSelected} max={1} disabled={status !== "idle"} />
-      {stake && (
-        <div className="upgrade-target">
-          <label className="upgrade-chance">
-            <span>WUNSCHCHANCE · {desiredPct}%</span>
-            <input
-              type="range"
-              min={5}
-              max={90}
-              step={1}
-              value={desiredPct}
-              disabled={status !== "idle"}
-              onChange={(event) => setDesiredPct(Number(event.target.value))}
-            />
-            <small>Beste Treffer um {formatYuan(idealFen)} ¥</small>
-          </label>
-          <label>
-            <span>SUCHE · Charakter, Anime-Titel, Set</span>
-            <input
-              className="stake-search"
-              type="search"
-              placeholder="z. B. Makima, Genshin, NS-05…"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              disabled={status !== "idle"}
-            />
-          </label>
-          {target && (
-            <p className="stake-summary">
-              Ziel {target.card.character} · {formatYuan(target.valueFen)} ¥ · {Math.round(chance * 100)}%
-            </p>
-          )}
-          {targets.length === 0 ? (
-            <p className="stake-empty">{query ? "Kein teureres Upgrade zu dieser Suche." : "Kein teureres Ziel in der Nähe dieser Chance."}</p>
-          ) : (
-            <ul className="upgrade-row" aria-label="Passende Upgrade-Ziele">
-              {targets.map((row) => (
-                <li key={row.id}>
-                  <button type="button" className={target?.id === row.id ? "is-active" : ""} disabled={status !== "idle"} onClick={() => chooseTarget(row.id)}>
-                    <img src={cardAsset(row.card.image_path)} alt="" />
-                    <b style={{ color: rarityColor(row.card.rarity) }}>{row.card.rarity}</b>
-                    <strong>{row.card.character}</strong>
-                    <small>{row.card.title || row.card.set_name}</small>
-                    <em>{formatYuan(row.valueFen)} ¥ · {Math.round(row.chance * 100)}%</em>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-      <div className="minigame-actions">
-        {status === "idle" && <button type="button" className="minigame-go" disabled={!stake || !target || !chance} onClick={roll}>ROLL {chance ? `${Math.round(chance * 100)}%` : ""}</button>}
-        {status === "rolling" && <span className="minigame-wait">ROLLING…</span>}
-        {status === "win" && <button type="button" className="minigame-go" onClick={reset}>UPGRADED · AGAIN</button>}
-        {status === "loss" && <button type="button" className="minigame-go" onClick={reset}>BURNED · AGAIN</button>}
-      </div>
     </GameFrame>
   );
 }

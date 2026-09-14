@@ -5,9 +5,11 @@ import { cardAsset } from "../arcade-config";
 import type { Card } from "../card-types";
 import { formatYuan } from "../economy";
 import { secureRandom } from "../gacha-engine";
-import { CardStakePicker, stakeValueFen, type StakeCard } from "./card-stake-picker";
+import { CardStakePicker, StakeStrip, stakeValueFen, type StakeCard } from "./card-stake-picker";
 import { GameFrame } from "./game-frame";
 import {
+  JACKPOT_PLAYER_COLOR,
+  assignJackpotColors,
   jackpotBotCount,
   jackpotBotTargetFen,
   jackpotChance,
@@ -43,7 +45,6 @@ type Props = {
 };
 
 const BOT_NAMES = ["MAKIMA", "YELAN", "2B", "TIFA", "SHENHE", "NAMI", "ESDEATH"];
-const BOT_COLORS = ["#ff2e9a", "#00ecff", "#f7ff4a", "#ff8dc9", "#7df0b3", "#ac88ff", "#ff955e"];
 
 export function JackpotTable({ rows, catalog, valueFen, takeCards, grantCards, onPulse, playUiTap, playWin, playLoss }: Props) {
   const [selected, setSelected] = useState<number[]>([]);
@@ -66,6 +67,8 @@ export function JackpotTable({ rows, catalog, valueFen, takeCards, grantCards, o
     () => candidates.filter((card) => card.valueFen <= tier.botMaxFen * 1.15),
     [candidates, tier.botMaxFen],
   );
+  const selectedCards = selected.map((id) => rows.find((row) => row.card.id === id)?.card || byId.get(id)).filter(Boolean) as Card[];
+  const selectedFen = stakeValueFen(rows, selected);
 
   useEffect(() => () => {
     for (const timer of timers.current) window.clearTimeout(timer);
@@ -94,12 +97,13 @@ export function JackpotTable({ rows, catalog, valueFen, takeCards, grantCards, o
     const youEntry: Entry = {
       id: "you",
       name: "YOU",
-      color: "#f7ff4a",
+      color: JACKPOT_PLAYER_COLOR,
       cardIds: selected,
       valueFen: stakeFen,
       you: true,
     };
     const botCount = jackpotBotCount(tier, secureRandom);
+    const botColors = assignJackpotColors(botCount, [JACKPOT_PLAYER_COLOR], secureRandom);
     const pool = tablePool.length ? tablePool : candidates;
     let lobby = [youEntry];
     setEntries(lobby);
@@ -113,7 +117,7 @@ export function JackpotTable({ rows, catalog, valueFen, takeCards, grantCards, o
         const bot: Entry = {
           id: `bot-${index}`,
           name: BOT_NAMES[index % BOT_NAMES.length],
-          color: BOT_COLORS[index % BOT_COLORS.length],
+          color: botColors[index],
           cardIds,
           valueFen: value || target,
         };
@@ -156,40 +160,66 @@ export function JackpotTable({ rows, catalog, valueFen, takeCards, grantCards, o
     : "#221018 0 100%";
 
   return (
-    <GameFrame eyebrow="CARDS · WINNER TAKES ALL" title={<>JACK<i>POT</i></>}>
-      <details className="game-rules"><summary>Spielregeln</summary><p>Wähle die Tischklasse — sie begrenzt, wie hoch die Bots setzen. Dein eigener Einsatz darf darüber oder darunter liegen.</p></details>
-      <TableTiers value={tierId} onChange={setTierId} disabled={status !== "idle"} playUiTap={playUiTap} />
-      <CardStakePicker rows={rows} selected={status === "idle" ? selected : []} onChange={setSelected} disabled={status !== "idle"} />
-      <div className="jackpot-wheel-wrap">
-        <div
-          className={`jackpot-wheel${status === "spinning" ? " is-spinning" : ""}`}
-          style={{ background: `conic-gradient(${gradient})`, transform: `rotate(${rotation}deg)` }}
-          aria-hidden="true"
-        />
-        <i />
-        <b>{status === "idle" ? tier.title.replace(" CLASS", "") : `${Math.round(chance * 100)}%`}</b>
-      </div>
-      <ul className="jackpot-lobby">
-        {entries.map((entry) => (
-          <li key={entry.id} className={winnerId === entry.id ? "is-winner" : ""} style={{ "--entry": entry.color } as CSSProperties}>
-            <strong>{entry.name}</strong>
-            <span>{entry.cardIds.length} cards · {formatYuan(entry.valueFen)} ¥</span>
-            <div>
-              {entry.cardIds.slice(0, 4).map((id) => {
-                const card = byId.get(id);
-                return card ? <img key={`${entry.id}-${id}`} src={cardAsset(card.image_path)} alt="" /> : null;
-              })}
+    <GameFrame
+      eyebrow="CARDS · WINNER TAKES ALL"
+      title={<>JACK<i>POT</i></>}
+      stakeLabel="Karten in den Pot"
+      table={(
+        <>
+          <TableTiers value={tierId} onChange={setTierId} disabled={status !== "idle"} playUiTap={playUiTap} />
+          <div className="jackpot-arena">
+            <div className="jackpot-wheel-wrap">
+              <div
+                className={`jackpot-wheel${status === "spinning" ? " is-spinning" : ""}`}
+                style={{ background: `conic-gradient(${gradient})`, transform: `rotate(${rotation}deg)` }}
+                aria-hidden="true"
+              />
+              <i />
+              <b>{status === "idle" ? tier.title.replace(" CLASS", "") : `${Math.round(chance * 100)}%`}</b>
             </div>
-          </li>
-        ))}
-      </ul>
-      <div className="minigame-actions">
-        {status === "idle" && <button type="button" className="minigame-go" disabled={!selected.length} onClick={join}>JOIN POT {formatYuan(stakeValueFen(rows, selected))} ¥</button>}
-        {status === "joining" && <span className="minigame-wait">LOBBY FILLING…</span>}
-        {status === "spinning" && <span className="minigame-wait">SPINNING THE POT…</span>}
-        {status === "win" && <button type="button" className="minigame-go" onClick={reset}>YOU HIT THE POT · AGAIN</button>}
-        {status === "loss" && <button type="button" className="minigame-go" onClick={reset}>HOUSE KEEPS IT · AGAIN</button>}
-      </div>
+            <div className="jackpot-side">
+              <ul className="jackpot-lobby">
+                {entries.length === 0 && (
+                  <li className="is-empty">
+                    <strong>LOBBY</strong>
+                    <span>Noch niemand im Pot. Klasse wählen, Karten unten setzen, dann joinen.</span>
+                  </li>
+                )}
+                {entries.map((entry) => (
+                  <li key={entry.id} className={winnerId === entry.id ? "is-winner" : ""} style={{ "--entry": entry.color } as CSSProperties}>
+                    <strong>{entry.name}</strong>
+                    <span>{entry.cardIds.length} cards · {formatYuan(entry.valueFen)} ¥</span>
+                    <div>
+                      {entry.cardIds.slice(0, 4).map((id) => {
+                        const card = byId.get(id);
+                        return card ? <img key={`${entry.id}-${id}`} src={cardAsset(card.image_path)} alt="" /> : null;
+                      })}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <div className="card-table-bar">
+                {status === "idle" && <StakeStrip cards={selectedCards} empty="Unten Karten für den Pot wählen." />}
+                <p className="stake-summary">
+                  {status === "idle"
+                    ? (selected.length ? `${selected.length} bereit · ${formatYuan(selectedFen)} ¥` : "Wähle unten Karten, dann in den Pot.")
+                    : you ? `${Math.round(chance * 100)}% · ${formatYuan(you.valueFen)} ¥ im Pot` : "Lobby füllt sich…"}
+                </p>
+                <div className="minigame-actions">
+                  {status === "idle" && <button type="button" className="minigame-go" disabled={!selected.length} onClick={join}>JOIN POT {formatYuan(selectedFen)} ¥</button>}
+                  {status === "joining" && <span className="minigame-wait">LOBBY FILLING…</span>}
+                  {status === "spinning" && <span className="minigame-wait">SPINNING THE POT…</span>}
+                  {status === "win" && <button type="button" className="minigame-go" onClick={reset}>YOU HIT THE POT · AGAIN</button>}
+                  {status === "loss" && <button type="button" className="minigame-go" onClick={reset}>HOUSE KEEPS IT · AGAIN</button>}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+      stake={<CardStakePicker rows={rows} selected={status === "idle" ? selected : []} onChange={setSelected} disabled={status !== "idle"} />}
+    >
+      <details className="game-rules"><summary>Spielregeln</summary><p>Wähle die Tischklasse — sie begrenzt, wie hoch die Bots setzen. Dein eigener Einsatz darf darüber oder darunter liegen.</p></details>
     </GameFrame>
   );
 }

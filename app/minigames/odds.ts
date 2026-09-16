@@ -260,6 +260,48 @@ export function rollChance(chance: number, random: RandomSource) {
   return random() < Math.max(0, Math.min(1, chance));
 }
 
+export const HILO_HOUSE = 0.96;
+export const HILO_STREAKS = [1, 1.5, 2, 3] as const;
+
+export function hiloStreakMult(streak: number) {
+  return HILO_STREAKS[Math.max(0, Math.min(HILO_STREAKS.length - 1, streak - 1))] || 1;
+}
+
+export function hiloPayout(stakeFen: number, streak: number) {
+  return payoutFen(stakeFen, 2 * HILO_HOUSE * hiloStreakMult(streak));
+}
+
+export function hiloCall(current: number, next: number): "higher" | "lower" | "push" {
+  if (next === current) return "push";
+  return next > current ? "higher" : "lower";
+}
+
+export function duelAtk(rarityTierValue: number, valueFen: number) {
+  return rarityTierValue * 20 + Math.min(80, Math.floor(Math.max(0, valueFen) / 10));
+}
+
+export function closestValueCard(candidates: readonly ValueCard[], targetFen: number, exclude: readonly number[] = []) {
+  const blocked = new Set(exclude);
+  const pool = candidates.filter((card) => card.valueFen > 0 && !blocked.has(card.id));
+  if (!pool.length) return null;
+  return pool.reduce((best, card) => (
+    Math.abs(card.valueFen - targetFen) < Math.abs(best.valueFen - targetFen)
+    || (Math.abs(card.valueFen - targetFen) === Math.abs(best.valueFen - targetFen) && card.id < best.id)
+      ? card
+      : best
+  ));
+}
+
+export function packBattleRanks(seats: { id: string; values: number[] }[]) {
+  const ranked = seats.map((seat) => {
+    const values = [...seat.values].sort((left, right) => right - left);
+    return { id: seat.id, best: values[0] || 0, second: values[1] || 0 };
+  }).sort((left, right) => right.best - left.best || right.second - left.second);
+  const lead = ranked[0];
+  const tied = ranked.filter((row) => row.best === lead.best && row.second === lead.second);
+  return { winnerId: tied.length === 1 ? lead.id : null, tied: tied.length > 1, ranked };
+}
+
 export function pickCardsForValue(
   candidates: readonly ValueCard[],
   targetFen: number,
@@ -286,4 +328,46 @@ export function pickCardsForValue(
     Math.abs(card.valueFen - targetFen) < Math.abs(best.valueFen - targetFen) ? card : best
   ));
   return [closest.id];
+}
+
+export const SPEED_HOUSE = 0.96;
+
+export function speedPayout(stakeFen: number, streak: number) {
+  return payoutFen(stakeFen, SPEED_HOUSE * (1 + streak * 0.5));
+}
+
+export function caboScore(values: number[]) {
+  return values.reduce((sum, value) => sum + value, 0);
+}
+
+export function scopaCaptures(hand: number, table: number[]) {
+  const exact = table.filter((value) => value === hand);
+  if (exact.length) return exact.slice(0, 1);
+  for (let i = 0; i < table.length; i += 1) {
+    for (let j = i + 1; j < table.length; j += 1) {
+      if (table[i] + table[j] === hand) return [table[i], table[j]];
+    }
+  }
+  return [];
+}
+
+export const LOVE_RANKS = [1, 1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8] as const;
+
+export function loveMustCountess(hand: number[]) {
+  return hand.includes(7) && (hand.includes(5) || hand.includes(6));
+}
+
+export function koiYaku(captured: { character: string }[]) {
+  const counts = new Map<string, number>();
+  for (const card of captured) counts.set(card.character, (counts.get(card.character) || 0) + 1);
+  let points = 0;
+  for (const count of counts.values()) {
+    if (count >= 3) points += count;
+  }
+  if (captured.length >= 5) points += 1;
+  return points;
+}
+
+export function patiencePair(left: { character: string; rarity: string }, right: { character: string; rarity: string }) {
+  return left.character === right.character || left.rarity === right.rarity;
 }

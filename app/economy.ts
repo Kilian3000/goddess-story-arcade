@@ -44,13 +44,28 @@ export const MINIGAME_IDS = [
   "jackpot",
   "coinflip",
   "upgrader",
+  "memory",
+  "duel",
+  "hilo",
+  "war",
+  "packbattle",
+  "sisterrip",
+  "gachapon",
+  "ufo",
+  "lastpack",
+  "mind",
+  "speed",
+  "monte",
+  "cabo",
+  "scopa",
+  "loveletter",
+  "koikoi",
 ] as const;
 
 export type MinigameId = (typeof MINIGAME_IDS)[number];
 
 const LEGACY_MINIGAME_IDS: Record<string, MinigameId> = {
   shrine: "waifu21",
-  duel: "heartlock",
 };
 
 export function isMinigameId(value: string): value is MinigameId {
@@ -63,9 +78,12 @@ export function normalizeMinigameId(value: string | null | undefined): MinigameI
   return isMinigameId(value) ? value : null;
 }
 
+export type PrizeLockKind = "prize" | "daily";
+
 export type PrizeLockRecord = {
   packId: number;
-  returnMode: MinigameId;
+  returnMode: MinigameId | null;
+  kind?: PrizeLockKind;
 };
 
 export type RarityValueFile = {
@@ -357,9 +375,95 @@ export function finalizeOpenedPack(state: EconomyState, costYuan: number, cardId
 // Build the entire purchase in memory; callers persist only a successful batch.
 export function canOpenPacks(state: EconomyState, costYuan: number, count: number) {
   if (!Number.isInteger(count) || count < 1 || count > 10) return false;
+  if (costYuan === 0) return count === 1;
   const voucher = voucherForCost(costYuan);
   const paid = Math.max(0, count - (voucher ? state.vouchers[voucher] : 0));
   return costYuan > 0 && Number.isFinite(costYuan) && state.balanceFen >= yuanToFen(costYuan) * paid;
+}
+
+export function finalizeFreePack(state: EconomyState, cardIds: number[]) {
+  if (!cardIds.length) return { ok: false as const };
+  const next = addCardsToCollection(state, cardIds);
+  next.packsOpenedSinceTopup += 1;
+  next.stats.packsOpened += 1;
+  return { ok: true as const, state: next };
+}
+
+export function sellCards(state: EconomyState, items: { cardId: number; valueFen: number }[]) {
+  let next = state;
+  let sold = 0;
+  for (const item of items) {
+    const result = sellCard(next, item.cardId, item.valueFen);
+    if (!result.ok) continue;
+    next = result.state;
+    sold += 1;
+  }
+  return sold > 0 ? { ok: true as const, state: next, sold } : { ok: false as const };
+}
+
+export type CraftLookup = (cardId: number) => { rarity: string; set_name: string } | undefined;
+
+export type CraftRuleId = "SR" | "HIGH" | "CHASE";
+
+export const CRAFT_RULES: Record<CraftRuleId, { from: string; excess: number }> = {
+  SR: { from: "R", excess: 12 },
+  HIGH: { from: "SR", excess: 6 },
+  CHASE: { from: "SSR", excess: 3 },
+};
+
+export function craftRuleForTarget(rarity: string): CraftRuleId | null {
+  if (rarity === "SR") return "SR";
+  if (rarity === "SCR" || rarity === "SSR") return "HIGH";
+  if (rarityTierValue(rarity) >= 3) return "CHASE";
+  return null;
+}
+
+function rarityTierValue(rarity: string) {
+  if (rarity === "R") return 0;
+  if (rarity === "CR" || rarity === "SR" || rarity === "FR") return 1;
+  if (rarity === "SCR" || rarity === "FRR") return 2;
+  if (rarity === "SSR" || rarity === "BHR") return 3;
+  return 4;
+}
+
+export function craftCard(
+  state: EconomyState,
+  target: { id: number; rarity: string; set_name: string },
+  lookup: CraftLookup,
+) {
+  const ruleId = craftRuleForTarget(target.rarity);
+  if (!ruleId) return { ok: false as const };
+  const rule = CRAFT_RULES[ruleId];
+  const ownedTarget = cardCount(state, target.id);
+  if ((ruleId === "SR" || ruleId === "HIGH") && ownedTarget > 0) return { ok: false as const };
+  const fuel = Object.entries(state.cards)
+    .map(([id, count]) => ({ id: Number(id), count, info: lookup(Number(id)) }))
+    .filter((row) => (
+      row.info
+      && row.info.set_name === target.set_name
+      && row.info.rarity === rule.from
+      && row.id !== target.id
+      && row.count > 1
+    ))
+    .sort((left, right) => right.count - left.count || left.id - right.id);
+  const available = fuel.reduce((sum, row) => sum + (row.count - 1), 0);
+  if (available < rule.excess) return { ok: false as const };
+  const next = cloneState(state);
+  let remain = rule.excess;
+  const spent: number[] = [];
+  for (const row of fuel) {
+    const take = Math.min(remain, row.count - 1);
+    const key = String(row.id);
+    const after = row.count - take;
+    if (after <= 0) delete next.cards[key];
+    else next.cards[key] = after;
+    for (let index = 0; index < take; index += 1) spent.push(row.id);
+    remain -= take;
+    if (remain === 0) break;
+  }
+  if (remain > 0) return { ok: false as const };
+  next.cards[String(target.id)] = (next.cards[String(target.id)] || 0) + 1;
+  return { ok: true as const, state: next, spent, rule: ruleId };
 }
 
 export function finalizeOpenedPacks(state: EconomyState, costYuan: number, packs: number[][]) {
@@ -426,6 +530,12 @@ export function resolveTopup(
 ) {
   const chance = storeSuccessChance(sku.baseline, packsOpenedSinceTopup);
   return { approved: random() < chance, chance };
+}
+
+export function grantVoucher(state: EconomyState, cost: VoucherCost) {
+  const next = cloneState(state);
+  next.vouchers[cost] += 1;
+  return next;
 }
 
 export function applyTopup(state: EconomyState, yuan: number) {
@@ -517,9 +627,12 @@ export function readPrizeLock(): PrizeLockRecord | null {
     const raw = window.sessionStorage.getItem(PRIZE_LOCK_KEY);
     const value = raw ? JSON.parse(raw) as PrizeLockRecord : null;
     if (!value || !Number.isFinite(value.packId)) return null;
+    if (value.kind === "daily") {
+      return { packId: value.packId, returnMode: null, kind: "daily" };
+    }
     const returnMode = normalizeMinigameId(value.returnMode);
     if (!returnMode) return null;
-    return { packId: value.packId, returnMode };
+    return { packId: value.packId, returnMode, kind: "prize" };
   } catch {
     return null;
   }

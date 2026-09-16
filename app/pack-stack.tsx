@@ -14,7 +14,16 @@ function subscribePhone(callback: () => void) {
 const phoneSnapshot = () => window.matchMedia(PHONE_GESTURE_QUERY).matches;
 const serverPhoneSnapshot = () => false;
 
-type StackCard = { id: number; image: string; character: string; rarity: string; color: string };
+type StackCard = {
+  id: number;
+  image: string;
+  character: string;
+  rarity: string;
+  color: string;
+  isNew?: boolean;
+  copies?: number;
+  chase?: boolean;
+};
 type Props = {
   boosterSize?: number;
   cards: StackCard[];
@@ -23,6 +32,7 @@ type Props = {
   onPrevious: () => void;
   onInspect: () => void;
   onPeek: () => void;
+  foilStrength?: number;
 };
 type Gesture = {
   x: number; y: number; time: number; lastX: number; lastTime: number; velocity: number;
@@ -30,7 +40,7 @@ type Gesture = {
   phone: boolean; samples: MotionSample[];
 };
 
-export function PackStack({ cards, boosterSize = cards.length, activeIndex, onNext, onPrevious, onInspect, onPeek }: Props) {
+export function PackStack({ cards, boosterSize = cards.length, activeIndex, onNext, onPrevious, onInspect, onPeek, foilStrength = 1 }: Props) {
   const boosterStart = Math.floor(activeIndex / boosterSize) * boosterSize;
   const boosterEnd = Math.min(cards.length, boosterStart + boosterSize);
   const phone = useSyncExternalStore(subscribePhone, phoneSnapshot, serverPhoneSnapshot);
@@ -228,9 +238,14 @@ export function PackStack({ cards, boosterSize = cards.length, activeIndex, onNe
             <span className="pack-face-shine" />
 
             {current && <span key={activeIndex} className="pack-reveal-sheen" />}
+            {current && (card.chase || card.isNew || (card.copies || 0) > 1) && (
+              <span className={`pack-pull-mark${card.chase ? " is-chase" : ""}${card.isNew ? " is-new" : ""}`}>
+                {card.chase ? "CHASE" : card.isNew ? "NEW" : `×${card.copies}`}
+              </span>
+            )}
           </span>;
         })}
-        <FoilSurface finish={cardFinish(active.rarity)} strength={tier >= 4 ? .85 : tier >= 3 ? .65 : tier >= 2 ? .45 : tier >= 1 ? .3 : 0} />
+        <FoilSurface finish={cardFinish(active.rarity)} strength={(tier >= 4 ? .85 : tier >= 3 ? .65 : tier >= 2 ? .45 : tier >= 1 ? .3 : 0) * foilStrength} />
       </div>
       <button className="pack-touch-pad" aria-label={`${active.rarity} ${active.character}. ${phone ? "Drag slowly to peek; flick in any direction for the next card" : "Swipe left to reveal, drag up to peek"}, or tap for details.`}
         onDragStart={event => event.preventDefault()} onContextMenu={event => event.preventDefault()}

@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { cardAsset } from "../arcade-config";
 import { rarityColor } from "../arcade-ui";
+import { CardBulkBar } from "../card-bulk-bar";
+import { pickSingleId, removeAllOfId, type BulkRow } from "../card-bulk-select";
 import type { Card } from "../card-types";
 import { formatYuan } from "../economy";
 
@@ -55,6 +57,17 @@ function columnsForWidth(width: number) {
   return Math.max(2, Math.floor((width + COL_GAP) / (COL_MIN + COL_GAP)));
 }
 
+function toBulkRow(row: StakeCard): BulkRow {
+  return {
+    id: row.card.id,
+    rarity: row.card.rarity,
+    setName: row.card.set_name,
+    character: row.card.character || "Unknown",
+    count: row.count,
+    valueFen: row.valueFen,
+  };
+}
+
 export function CardStakePicker({
   rows,
   selected,
@@ -72,6 +85,7 @@ export function CardStakePicker({
   const [dupesOnly, setDupesOnly] = useState(false);
   const [singlesOnly, setSinglesOnly] = useState(false);
   const [rarity, setRarity] = useState("all");
+  const [selectedOnly, setSelectedOnly] = useState(false);
   const pageSize = columns * PAGE_ROWS;
 
   useEffect(() => {
@@ -89,9 +103,11 @@ export function CardStakePicker({
     [rows],
   );
 
+  const selectedIds = useMemo(() => new Set(selected), [selected]);
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const next = rows.filter((row) => {
+      if (selectedOnly && !selectedIds.has(row.card.id)) return false;
       if (dupesOnly && row.count < 2) return false;
       if (singlesOnly && row.count > 1) return false;
       if (rarity !== "all" && row.card.rarity !== rarity) return false;
@@ -111,12 +127,15 @@ export function CardStakePicker({
       return right.valueFen - left.valueFen || left.card.id - right.card.id;
     });
     return next;
-  }, [dupesOnly, query, rarity, rows, singlesOnly, sort]);
+  }, [dupesOnly, query, rarity, rows, selectedIds, selectedOnly, singlesOnly, sort]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, pageCount - 1);
   const visible = filtered.slice(safePage * pageSize, safePage * pageSize + pageSize);
   const selectedValue = stakeValueFen(rows, selected);
+  const bulkRows = useMemo(() => filtered.map(toBulkRow), [filtered]);
+  const allBulkRows = useMemo(() => rows.map(toBulkRow), [rows]);
+  const multi = max > 1;
 
   const add = (cardId: number, owned: number) => {
     if (disabled) return;
@@ -130,6 +149,15 @@ export function CardStakePicker({
     onChange([...selected, cardId]);
   };
 
+  const toggleCard = (cardId: number, owned: number) => {
+    if (disabled) return;
+    if (selectedCount(selected, cardId) > 0) {
+      onChange(removeAllOfId(selected, cardId));
+      return;
+    }
+    add(cardId, owned);
+  };
+
   const remove = (cardId: number) => {
     if (disabled) return;
     const index = selected.lastIndexOf(cardId);
@@ -137,9 +165,20 @@ export function CardStakePicker({
     onChange(selected.filter((_, current) => current !== index));
   };
 
+  const dropCard = (cardId: number) => {
+    if (disabled) return;
+    onChange(removeAllOfId(selected, cardId));
+  };
+
   const changeFilter = (apply: () => void) => {
     apply();
     setPage(0);
+  };
+
+  const pickOne = (kind: "cheap" | "expensive" | "cheap-excess") => {
+    if (disabled) return;
+    const id = pickSingleId(bulkRows, kind);
+    if (id != null) onChange([id]);
   };
 
   if (!rows.length) {
@@ -181,7 +220,32 @@ export function CardStakePicker({
           <input type="checkbox" checked={singlesOnly} onChange={(event) => changeFilter(() => { setSinglesOnly(event.target.checked); if (event.target.checked) setDupesOnly(false); })} />
           Nur Uniques
         </label>
+        {multi && (
+          <label className="stake-check">
+            <input type="checkbox" checked={selectedOnly} onChange={(event) => changeFilter(() => setSelectedOnly(event.target.checked))} />
+            Nur Auswahl
+          </label>
+        )}
       </div>
+      {!multi && (
+        <div className="bulk-quick">
+          <button type="button" disabled={disabled} onClick={() => pickOne("cheap")}>Günstigste</button>
+          <button type="button" disabled={disabled} onClick={() => pickOne("expensive")}>Teuerste</button>
+          <button type="button" disabled={disabled} onClick={() => pickOne("cheap-excess")}>Günstigstes Double</button>
+        </div>
+      )}
+      {multi && (
+        <CardBulkBar
+          rows={bulkRows}
+          fullRows={allBulkRows}
+          selected={selected}
+          onChange={onChange}
+          max={max}
+          disabled={disabled}
+          applyLabel="Setzen"
+          defaultOpen={false}
+        />
+      )}
       {selected.length > 0 && (
         <p className="stake-summary">{selected.length} gesetzt · {formatYuan(selectedValue)} ¥</p>
       )}
@@ -194,7 +258,7 @@ export function CardStakePicker({
             const lastCopy = used > 0 && used >= count;
             return (
               <li key={card.id} className={used ? "is-selected" : ""} style={{ "--card-color": rarityColor(card.rarity) } as CSSProperties}>
-                <button type="button" disabled={disabled || (used >= count && max > 1)} onClick={() => add(card.id, count)}>
+                <button type="button" disabled={disabled} onClick={() => toggleCard(card.id, count)}>
                   <img src={cardAsset(card.image_path)} alt="" />
                   <b style={{ color: rarityColor(card.rarity) }}>{card.rarity}</b>
                   <strong>{card.character || "Unknown"}</strong>
@@ -204,7 +268,9 @@ export function CardStakePicker({
                 {used > 0 && (
                   <div className="stake-qty">
                     <span>{used}/{count}{lastCopy ? " · letzte Kopie" : ""}</span>
-                    <button type="button" disabled={disabled} onClick={() => remove(card.id)} aria-label={`${card.character} entfernen`}>−</button>
+                    <button type="button" disabled={disabled} onClick={() => remove(card.id)} aria-label={`${card.character} eine Kopie weniger`}>−</button>
+                    <button type="button" disabled={disabled || used >= count} onClick={() => add(card.id, count)} aria-label={`${card.character} eine Kopie mehr`}>+</button>
+                    <button type="button" disabled={disabled} onClick={() => dropCard(card.id)} aria-label={`${card.character} aus der Auswahl nehmen`}>×</button>
                   </div>
                 )}
               </li>

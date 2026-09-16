@@ -12,18 +12,24 @@ export function BackgroundMusic() {
     const player = audio.current;
     if (!player) return;
     let games = pathname === "/" && Boolean(new URLSearchParams(location.search).get("play"));
+    let midnight = false;
     const sync = () => {
       const track = games ? disco : chill;
       if (player.getAttribute("src") !== track) {
         player.src = track;
         player.dataset.track = games ? "disco" : "positive-chill-hop";
       }
-      player.volume = .3;
+      player.volume = midnight ? .22 : .3;
       const enabled = localStorage.getItem("goddess-gacha-music-v1") !== "off" && localStorage.getItem("goddess-gacha-sound-v3") !== "muted";
       if (!enabled) player.pause();
       else if (player.paused) void player.play().catch(() => { /* Safari retries on the next interaction. */ });
     };
-    const mode = (event: Event) => { games = (event as CustomEvent).detail === "games"; sync(); };
+    const mode = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      games = detail === "games";
+      midnight = detail === "midnight";
+      sync();
+    };
     window.addEventListener("goddess-music-mode", mode);
     window.addEventListener("goddess-music-sync", sync);
     window.addEventListener("storage", sync);

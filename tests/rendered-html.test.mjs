@@ -59,7 +59,11 @@ test("ships the verified Goddess Story pack catalog", async () => {
   const registry = await readFile(new URL("../app/minigames/registry.ts", import.meta.url), "utf8");
   assert.match(registry, /WAIFU 21/);
   assert.match(registry, /HEARTLOCK/);
-  assert.match(page, /window\.localStorage/);
+  assert.match(registry, /GACHAPON/);
+  assert.match(registry, /LAST PACK/);
+  const packDraw = await readFile(new URL("../app/pack-draw.ts", import.meta.url), "utf8");
+  assert.match(packDraw, /window\.localStorage/);
+  assert.match(page, /drawFilledPacks/);
   assert.doesNotMatch(page, /arcade-hostess\.png/);
   const privateBrand = new RegExp(["hen", "tai"].join(""), "i");
   assert.doesNotMatch(`${page}\n${config}`, privateBrand);

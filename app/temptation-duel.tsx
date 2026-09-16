@@ -25,6 +25,7 @@ type TemptationDuelProps = {
   ready: boolean;
   muses: WaifuMuse[];
   onClaim: (pack: PackConfig) => void;
+  claimLabel?: string;
   startMusic: () => Promise<void>;
   playLock: (quality: LockQuality, streak: number) => Promise<void>;
   playUiTap: () => Promise<void>;
@@ -84,7 +85,7 @@ function randomZone(width: number) {
   return edge + secureRandom() * (100 - edge * 2);
 }
 
-export function TemptationDuel({ catalog, ready, muses, onClaim, startMusic, playLock, playUiTap, playStart, playLoss, playWin }: TemptationDuelProps) {
+export function TemptationDuel({ catalog, ready, muses, onClaim, claimLabel, startMusic, playLock, playUiTap, playStart, playLoss, playWin }: TemptationDuelProps) {
   const [status, setStatus] = useState<DuelStatus>("lobby");
   const [selectedCost, setSelectedCost] = useState(1);
   const [selectedPackId, setSelectedPackId] = useState(0);
@@ -313,7 +314,7 @@ export function TemptationDuel({ catalog, ready, muses, onClaim, startMusic, pla
 
         {status === "win" && prize && <div className="temptation-result temptation-result-win">
           <small>HEART CAPTURED</small><h2>YOU WIN</h2><p>{opponent?.character} gives up the <b>{prize.setName}</b> booster.</p>
-          <button onClick={() => { void playUiTap(); window.localStorage.removeItem(PRIZE_KEY); onClaim(prize); }}>RIP YOUR {prize.setName}<span>↗</span></button>
+          <button onClick={() => { void playUiTap(); window.localStorage.removeItem(PRIZE_KEY); onClaim(prize); }}>{claimLabel || `RIP YOUR ${prize.setName}`}<span>↗</span></button>
         </div>}
 
         {status === "loss" && <div className="temptation-result temptation-result-loss">

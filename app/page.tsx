@@ -6,17 +6,34 @@ import { flushSync } from "react-dom";
 import Link from "next/link";
 import {
   compilePackRecipe,
-  applyTenPackBonus,
-  createCollationState,
-  drawPackRarities,
-  isCollationStateValid,
   rarityTier,
   recipeRarityTargets,
-  secureRandom,
   type CollationState,
   type PackConfig,
-  type PackRecipe,
 } from "./gacha-engine";
+import {
+  boxMeter,
+  drawFilledPacks,
+  poolForRarity,
+  readCollation,
+  readOpenedCount,
+  revealMarks,
+  writeCollation,
+  writeOpenedCount,
+  type RevealMark,
+} from "./pack-draw";
+import {
+  DETECTIVE_PAY_FEN,
+  detectiveBucket,
+  ghostLine,
+  isMidnight,
+  omikujiById,
+  oshiLetter,
+  rollOmikuji,
+  weighPack,
+} from "./arcade-flavor";
+import { newlyCompletedCharacters, newlyCompletedSets } from "./collection-progress";
+import { PITY_ARM, pityState, rainFen, skillConsolationFen } from "./arcade-meta";
 import { arcadeConfig, cardAsset } from "./arcade-config";
 import { groupClass, groupLabels, rarityColor } from "./arcade-ui";
 import type { Card } from "./card-types";
@@ -40,6 +57,7 @@ import { boosterShine } from "./pack-presentation";
 import { SellButton } from "./sell-button";
 import { PackOpening } from "./pack-opening";
 import { PackCarousel } from "./pack-carousel";
+import { PackSummaryBulk } from "./pack-summary-bulk";
 import { type WaifuMuse } from "./lucky-shrine";
 import { MinigameHub } from "./minigames/minigame-hub";
 import {
@@ -51,6 +69,7 @@ import {
   type MinigameId,
 } from "./minigames/registry";
 import { useCardCatalog } from "./use-card-catalog";
+import { useArcadeMeta } from "./use-arcade-meta";
 import { useEconomy } from "./use-economy";
 import { useGachaAudio } from "./use-gacha-audio";
 import { AppIcon } from "./ui-icons";
@@ -86,16 +105,6 @@ const shrineDealerCards: WaifuMuse[] = [
 ];
 
 function cardImage(card: Card) { return cardAsset(card.image_path); }
-function collationKey(setName: string) { return `goddess-gacha-collation-${setName}-v3`; }
-function openedKey(setName: string) { return `goddess-gacha-opened-${setName}-v3`; }
-
-function chooseUniqueCard(pool: Card[], used: Set<number>) {
-  const available = pool.filter((card) => !used.has(card.id));
-  if (!available.length) return null;
-  const card = available[Math.floor(secureRandom() * available.length)];
-  used.add(card.id);
-  return card;
-}
 
 async function preloadCards(cards: Card[]) {
   await Promise.allSettled(cards.map((card) => new Promise<void>((resolve) => {
@@ -110,20 +119,10 @@ async function preloadCards(cards: Card[]) {
   })));
 }
 
-function readCollation(config: PackConfig, recipe: PackRecipe) {
-  try {
-    const raw = window.localStorage.getItem(collationKey(config.setName));
-    const saved: unknown = raw ? JSON.parse(raw) : null;
-    if (isCollationStateValid(saved, config, recipe)) return saved;
-  } catch {
-    // Invalid local state starts a fresh hidden box.
-  }
-  return createCollationState(config, recipe);
-}
-
 export default function Home() {
   const { allCards, sets, catalog, dbStatus, catalogStatus, catalogReady } = useCardCatalog();
-  const { state: economy, valueFen, openPacks: chargeOpenedPacks, sell, creditTopup } = useEconomy();
+  const { state: economy, valueFen, openPacks: chargeOpenedPacks, openFreePack, sell, sellMany, credit, creditTopup, addVoucher } = useEconomy();
+  const arcade = useArcadeMeta();
   const pendingRaw = useSyncExternalStore(subscribePendingTopup, readPendingSnapshot, () => "");
   const prizeRaw = useSyncExternalStore(subscribePrizeLock, readPrizeSnapshot, () => "");
   const pendingTopup = pendingRaw ? readPendingTopup() : null;
@@ -141,7 +140,9 @@ export default function Home() {
   const playFromUrl = useSyncExternalStore(subscribePlayParam, playSnapshot, () => "");
   const activeGame = minigameById(playFromUrl)?.id ?? DEFAULT_MINIGAME;
   const mode: ExperienceMode = prizeRecord ? "altar" : playFromUrl ? "games" : "altar";
-  useEffect(() => { window.dispatchEvent(new CustomEvent("goddess-music-mode", { detail: mode })); }, [mode]);
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("goddess-music-mode", { detail: isMidnight() ? "midnight" : mode }));
+  }, [mode]);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [inspectorFromSummary, setInspectorFromSummary] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
@@ -154,6 +155,13 @@ export default function Home() {
   const [hitNonce, setHitNonce] = useState(0);
   const soldGuard = useRef<{ pack: Card[]; indexes: Set<number> }>({ pack: [], indexes: new Set() });
   const [soldIndexes, setSoldIndexes] = useState<Set<number>>(() => new Set());
+  const [summaryPicked, setSummaryPicked] = useState<number[]>([]);
+  const [pullMarks, setPullMarks] = useState<RevealMark[]>([]);
+  const [rainBurst, setRainBurst] = useState(0);
+  const [metaToast, setMetaToast] = useState("");
+  const [weigh, setWeigh] = useState(() => weighPack());
+  const [ghostText, setGhostText] = useState("");
+  const [godPackHit, setGodPackHit] = useState(false);
   const [walletAnimating, setWalletAnimating] = useState(false);
   const [walletFromFen, setWalletFromFen] = useState(0);
   const sequence = useRef(0);
@@ -187,9 +195,19 @@ export default function Home() {
     [catalog],
   );
   const prizeLock = prizeRecord ? catalog.find((item) => item.id === prizeRecord.packId) || null : null;
+  const isDailyLock = prizeRecord?.kind === "daily";
   const prizeReturnMode = prizeRecord?.returnMode ?? DEFAULT_MINIGAME;
-  const prizeReturnTitle = minigameById(prizeReturnMode)?.title ?? "MINIGAMES";
-  const selectedPack = prizeLock ?? pickedPack ?? fallbackPack;
+  const prizeReturnTitle = isDailyLock ? "DAILY" : minigameById(prizeReturnMode)?.title ?? "MINIGAMES";
+  const setParam = useSyncExternalStore(
+    (onChange) => {
+      window.addEventListener("popstate", onChange);
+      return () => window.removeEventListener("popstate", onChange);
+    },
+    () => new URLSearchParams(window.location.search).get("set") || "",
+    () => "",
+  );
+  const urlPack = catalog.find((pack) => pack.setName === setParam) || null;
+  const selectedPack = prizeLock ?? pickedPack ?? urlPack ?? fallbackPack;
   const activeGroup = groupFilter ?? selectedPack?.group ?? "2 юаня";
 
   useEffect(() => () => {
@@ -209,7 +227,7 @@ export default function Home() {
     sequence.current += 1;
     const sync = window.setTimeout(() => {
       setCollation(readCollation(selectedPack, recipe));
-      setOpened(Number(window.localStorage.getItem(openedKey(selectedPack.setName)) || 0) || 0);
+      setOpened(readOpenedCount(selectedPack.setName));
       setPack([]);
       setActiveIndex(0);
       setRevealedThrough(-1);
@@ -223,13 +241,26 @@ export default function Home() {
       setInspectorOpen(false);
       setGenerationError("");
       setSoldIndexes(new Set());
+      setSummaryPicked([]);
+      setPullMarks([]);
+      setWeigh(weighPack());
+      setGhostText("");
+      setGodPackHit(false);
     }, 0);
     return () => window.clearTimeout(sync);
   }, [recipe, selectedPack]);
 
+  useEffect(() => {
+    if (!metaToast) return;
+    const timer = window.setTimeout(() => setMetaToast(""), 3200);
+    return () => window.clearTimeout(timer);
+  }, [metaToast]);
+
   const active = pack[activeIndex];
   const dataReady = catalogReady && Boolean(selectedPack && recipe && collation);
-  const canAfford = selectedPack ? canOpenPacks(economy, selectedPack.cost, packCount) : false;
+  const canAfford = selectedPack
+    ? isDailyLock || canOpenPacks(economy, selectedPack.cost, packCount)
+    : false;
   const usingVoucher = selectedPack ? Boolean(voucherForCost(selectedPack.cost) && economy.vouchers[voucherForCost(selectedPack.cost)!] > 0) : false;
   const packValueFen = pack.reduce((sum, card) => sum + valueFen(card.id, card.rarity), 0);
   const packCostFen = (selectedPack?.cost ?? 0) * 100 * packCount;
@@ -237,7 +268,7 @@ export default function Home() {
   const bestPull = pack.length
     ? pack.reduce((best, card) => rarityTier(card.rarity) > rarityTier(best.rarity) ? card : best)
     : null;
-  const canChangeSet = mode === "altar" && !prizeLock && (phase === "sealed" || phase === "summary");
+  const canChangeSet = mode === "altar" && (phase === "sealed" || phase === "summary") && (!prizeLock || isDailyLock);
   const palette = groupClass(selectedPack?.group);
   const groupOptions = [...new Set(catalog.map((item) => item.group))];
   const shrineMuse = shrineDealerCards[0];
@@ -245,14 +276,7 @@ export default function Home() {
 
   const getPool = useCallback((rarity: string) => {
     if (!selectedPack) return [];
-    let pool = allCards.filter((card) => card.set_name === selectedPack.setName && card.rarity === rarity);
-    if (rarity === "R" && selectedPack.group === "1 юань") {
-      const oneYuan = catalog.filter((item) => item.group === "1 юань");
-      const index = oneYuan.findIndex((item) => item.setName === selectedPack.setName);
-      const previous = index > 0 ? oneYuan[index - 1] : null;
-      if (previous) pool = pool.concat(allCards.filter((card) => card.set_name === previous.setName && card.rarity === "R"));
-    }
-    return pool;
+    return poolForRarity(allCards, catalog, selectedPack, rarity);
   }, [allCards, catalog, selectedPack]);
 
   const navigateCard = useCallback((index: number) => {
@@ -265,8 +289,10 @@ export default function Home() {
     if (fresh) {
       revealedRef.current = index;
     }
-    if (fresh) void playReveal(pack[index].rarity);
-    else void playCardTravel();
+    if (fresh) {
+      void playReveal(pack[index].rarity);
+      if (pullMarks[index]?.chase) void playShrineWin(selectedPack?.cost || 1);
+    } else void playCardTravel();
     packHaptic(fresh ? tier : 0);
     flushSync(() => {
       setDirection(nextDirection);
@@ -288,7 +314,7 @@ export default function Home() {
       setTransitioning(false);
       navigationTimer.current = null;
     }, 230);
-  }, [activeIndex, pack, playCardTravel, playReveal]);
+  }, [activeIndex, pack, playCardTravel, playReveal, playShrineWin, pullMarks, selectedPack]);
 
   const nextCard = useCallback(() => {
     if (inputLock.current) return;
@@ -330,48 +356,102 @@ export default function Home() {
 
   const openPack = useCallback(async () => {
     if (!selectedPack || !recipe || !collation || !dataReady || !packChosen || phase !== "sealed" || mode !== "altar" || inputLock.current) return;
-    if (!canOpenPacks(economy, selectedPack.cost, packCount)) {
+    const openingCount = isDailyLock ? 1 : packCount;
+    if (!isDailyLock && !canOpenPacks(economy, selectedPack.cost, openingCount)) {
       setGenerationError("Nicht genug Yuan für diesen Booster.");
       return;
     }
     void startMusic();
     setGenerationError("");
     const token = ++sequence.current;
-    let nextCollation = collation;
-    const batches: Card[][] = [];
-    for (let packNumber = 0; packNumber < packCount; packNumber++) {
-      const draw = drawPackRarities(selectedPack, recipe, nextCollation);
-      const used = new Set<number>();
-      const cards: Card[] = [];
-      for (const rarity of draw.rarities) {
-        const card = chooseUniqueCard(getPool(rarity), used);
-        if (!card) { setGenerationError(`Für ${rarity} fehlen eindeutige Kartenbilder in ${selectedPack.setName}.`); return; }
-        cards.push(card);
-      }
-      if (cards.length !== selectedPack.odds.cardsPerPack) { setGenerationError("Die Pack-Kollation konnte nicht vollständig aufgebaut werden."); return; }
-      const bonus = applyTenPackBonus(draw.rarities, recipe, packCount);
-      if (bonus.boostedIndex !== null) {
-        const slot = bonus.boostedIndex;
-        const others = new Set(cards.filter((_, index) => index !== slot).map(card => card.id));
-        const upgraded = chooseUniqueCard(getPool(bonus.rarities[slot]), others);
-        // A tiny/incomplete catalog pool cannot turn the bonus into a failed purchase.
-        if (upgraded) cards[slot] = upgraded;
-      }
-      batches.push(cards);
-      nextCollation = draw.state;
+    const drawn = drawFilledPacks({
+      config: selectedPack,
+      recipe,
+      getPool,
+      count: openingCount,
+      collation,
+      tenPackBonus: !isDailyLock,
+      pityCount: arcade.pityBySet[selectedPack.setName] || 0,
+      pityArm: PITY_ARM,
+      allowGodPack: !isDailyLock && !prizeLock && openingCount === 1,
+    });
+    if (!drawn.ok) {
+      setGenerationError(drawn.error);
+      return;
     }
+    const batches = drawn.packs;
     const result = batches.flat();
-    const charged = chargeOpenedPacks(selectedPack.cost, batches.map(cards => cards.map(card => card.id)));
+    const before = { ...economy.cards };
+    const charged = isDailyLock
+      ? openFreePack(result.map((card) => card.id))
+      : chargeOpenedPacks(selectedPack.cost, batches.map((cards) => cards.map((card) => card.id)));
     if (!charged.ok) {
       setGenerationError("Nicht genug Yuan für diesen Booster.");
       return;
     }
 
-    const nextOpened = opened + packCount;
+    const nextOpened = opened + openingCount;
+    const marks = revealMarks(result, before, arcade.chaseCardIds);
+    const source = drawn.godPack ? "godpack" as const : isDailyLock ? "daily" as const : prizeLock ? "prize" as const : "altar" as const;
+    arcade.recordPulls(batches.map((cards) => ({
+      setName: selectedPack.setName,
+      costYuan: isDailyLock ? 0 : selectedPack.cost,
+      cardIds: cards.map((card) => card.id),
+      openedAt: Date.now(),
+      bestFen: cards.reduce((best, card) => Math.max(best, valueFen(card.id, card.rarity)), 0),
+      source,
+    })), { [selectedPack.setName]: drawn.pityCount });
+    if (drawn.godPack) arcade.bumpGodPacks();
+    setGodPackHit(drawn.godPack);
+    setGhostText(arcade.ghostOn() ? ghostLine(marks, drawn.godPack) : "");
+    result.forEach((card, index) => {
+      if (!marks[index]?.isNew) return;
+      const news = arcade.bumpOshiNews(card.character);
+      if (!news.milestone) return;
+      const tip = rainFen();
+      if (credit(tip)) {
+        setRainBurst((value) => value + 1);
+        setWalletFromFen(economy.balanceFen);
+        setWalletAnimating(true);
+        window.setTimeout(() => setWalletAnimating(false), 1000);
+      }
+      setMetaToast(oshiLetter(card.character, news.milestone));
+    });
+    arcade.unlockAchievement("first-rip");
+    if (marks.some((mark) => mark.isNew)) arcade.unlockAchievement("first-new");
+    if (marks.some((mark) => mark.chase)) arcade.unlockAchievement("chase-hit");
+    if ((charged.ok && (economy.stats.packsOpened + openingCount) >= 100)) arcade.unlockAchievement("packs-100");
+    const nextOwned = { ...before };
+    for (const card of result) nextOwned[String(card.id)] = (nextOwned[String(card.id)] || 0) + 1;
+    for (const setName of newlyCompletedSets(allCards, nextOwned, arcade.setClears)) {
+      const awarded = arcade.markSetClear(setName);
+      if (awarded.ok) {
+        addVoucher(1);
+        arcade.unlockAchievement("first-clear");
+        setMetaToast(`${setName} komplett · 1¥ Voucher`);
+      }
+    }
+    const knownYearbook = arcade.meta.yearbook.map((page) => page.character);
+    for (const name of newlyCompletedCharacters(allCards, nextOwned, knownYearbook)) {
+      const first = result.find((card) => card.character === name);
+      arcade.addYearbook(name, first?.id || 0);
+    }
+    const opens = arcade.bumpSession();
+    const hit = result.some((card) => rarityTier(card.rarity) >= 3);
+    const rain = arcade.rollRain(opens, hit);
+    if (rain > 0 && credit(rain)) {
+      setRainBurst((value) => value + 1);
+      setWalletFromFen(economy.balanceFen);
+      setWalletAnimating(true);
+      window.setTimeout(() => setWalletAnimating(false), 1000);
+    }
+    if (isDailyLock) arcade.markDailyPack();
+
     inputLock.current = true;
     void playTear();
     packHaptic(3);
     setPack(result);
+    setPullMarks(marks);
     setActiveIndex(0);
     setRevealedThrough(-1);
     setFreshIndex(-1);
@@ -379,22 +459,24 @@ export default function Home() {
     setDirection(1);
     setTransitioning(false);
     setInspectorOpen(false);
-    setCollation(nextCollation);
+    setCollation(drawn.collation);
     setOpened(nextOpened);
     setPhase("opening");
     setSoldIndexes(new Set());
-    window.localStorage.setItem(collationKey(selectedPack.setName), JSON.stringify(nextCollation));
-    window.localStorage.setItem(openedKey(selectedPack.setName), String(nextOpened));
+    setSummaryPicked([]);
+    writeCollation(selectedPack, drawn.collation);
+    writeOpenedCount(selectedPack.setName, nextOpened);
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     await Promise.all([
       preloadCards(result),
-      new Promise((resolve) => window.setTimeout(resolve, reducedMotion ? 30 : (packCount === 10 ? 3190 : 1850))),
+      new Promise((resolve) => window.setTimeout(resolve, reducedMotion ? 30 : (openingCount === 10 ? 3190 : 1850))),
     ]);
     if (sequence.current !== token) return;
     inputLock.current = false;
     revealedRef.current = 0;
     void playReveal(result[0].rarity);
+    if (marks[0]?.chase) void playShrineWin(selectedPack.cost);
     packHaptic(rarityTier(result[0].rarity));
     flushSync(() => {
       setPhase("revealing");
@@ -402,7 +484,7 @@ export default function Home() {
       setFreshIndex(0);
       setHitNonce((value) => value + 1);
     });
-  }, [chargeOpenedPacks, packCount, collation, dataReady, economy, getPool, mode, opened, packChosen, phase, playReveal, playTear, recipe, selectedPack, startMusic]);
+  }, [addVoucher, allCards, arcade, chargeOpenedPacks, collation, credit, dataReady, economy, getPool, isDailyLock, mode, openFreePack, opened, packChosen, packCount, phase, playReveal, playShrineWin, playTear, prizeLock, recipe, selectedPack, startMusic, valueFen]);
 
   const resetForAnother = () => {
     inputLock.current = false;
@@ -419,16 +501,61 @@ export default function Home() {
     setPhase("sealed");
     setPackChosen(false);
     setSoldIndexes(new Set());
+    setSummaryPicked([]);
+    setPullMarks([]);
+    setGhostText("");
+    setGodPackHit(false);
+    setWeigh(weighPack());
+  };
+  const claimOmikuji = () => {
+    if (!arcade.canOmikuji()) return;
+    const slip = rollOmikuji();
+    arcade.markOmikuji(slip.id);
+    setMetaToast(`${slip.title} · ${slip.line}`);
   };
   const selectPack = (item: PackConfig) => {
     if (!canChangeSet) return;
+    if (isDailyLock && item.cost !== 1) return;
     setPackCount(1);
     setPickedPack(item);
     setPackChosen(false);
     setGroupFilter(item.group);
     setShowMenu(false);
+    if (isDailyLock) writePrizeLock({ packId: item.id, returnMode: null, kind: "daily" });
+  };
+  const claimDailyPack = () => {
+    if (!arcade.canDailyPack()) return;
+    const daily = (selectedPack?.cost === 1 ? selectedPack : null)
+      || catalog.find((item) => item.cost === 1)
+      || null;
+    if (!daily) return;
+    sequence.current += 1;
+    setPackCount(1);
+    setPickedPack(daily);
+    setGroupFilter(daily.group);
+    setPack([]);
+    setActiveIndex(0);
+    setRevealedThrough(-1);
+    setFreshIndex(-1);
+    revealedRef.current = -1;
+    setInspectorOpen(false);
+    setPhase("sealed");
+    setPackChosen(false);
+    writePlayParam(null);
+    writePrizeLock({ packId: daily.id, returnMode: null, kind: "daily" });
   };
   const claimGamePrize = (item: PackConfig, source: MinigameId) => {
+    if (arcade.hasSkillClaim(source)) {
+      const consolation = skillConsolationFen(item.cost);
+      if (credit(consolation)) {
+        setWalletFromFen(economy.balanceFen);
+        setWalletAnimating(true);
+        window.setTimeout(() => setWalletAnimating(false), 1000);
+        setMetaToast(`Heute schon geclaimed · +${formatYuan(consolation)} ¥`);
+      }
+      return;
+    }
+    arcade.markSkillClaim(source);
     sequence.current += 1;
     setPackCount(1);
     setPickedPack(item);
@@ -442,17 +569,47 @@ export default function Home() {
     setPhase("sealed");
     setPackChosen(false);
     writePlayParam(null);
-    writePrizeLock({ packId: item.id, returnMode: source });
+    writePrizeLock({ packId: item.id, returnMode: source, kind: "prize" });
   };
   const returnToGame = () => {
     resetForAnother();
     writePrizeLock(null);
+    if (isDailyLock) return;
     writePlayParam(prizeReturnMode);
   };
   const pulseWallet = () => {
     setWalletFromFen(economy.balanceFen);
     setWalletAnimating(true);
     window.setTimeout(() => setWalletAnimating(false), 1000);
+  };
+  const markSoldIndexes = (indexes: number[]) => {
+    if (!indexes.length) return;
+    setSoldIndexes((current) => {
+      const next = new Set(current);
+      for (const index of indexes) next.add(index);
+      return next;
+    });
+    setSummaryPicked((current) => current.filter((index) => !indexes.includes(index)));
+    setWalletFromFen(economy.balanceFen);
+    setWalletAnimating(true);
+    window.setTimeout(() => setWalletAnimating(false), 1000);
+  };
+  const sellFromPackMany = (indexes: number[]) => {
+    const junk = indexes.flatMap((index) => {
+      const card = pack[index];
+      if (!card || soldIndexes.has(index)) return [];
+      return [{ index, cardId: card.id, valueFen: valueFen(card.id, card.rarity) }];
+    });
+    if (!junk.length) return;
+    const sold = sellMany(junk.map(({ cardId, valueFen: value }) => ({ cardId, valueFen: value })));
+    if (!sold) return;
+    markSoldIndexes(junk.map((row) => row.index));
+  };
+  const toggleSummaryPick = (index: number) => {
+    if (soldIndexes.has(index)) return;
+    setSummaryPicked((current) => (
+      current.includes(index) ? current.filter((item) => item !== index) : [...current, index]
+    ));
   };
   const sellFromPack = (index: number): boolean => {
     const card = pack[index];
@@ -462,7 +619,7 @@ export default function Home() {
     guard.add(index);
     try {
       if (sell(card.id, valueFen(card.id, card.rarity))) {
-        setSoldIndexes((current) => new Set(current).add(index));
+        markSoldIndexes([index]);
         return true;
       }
       guard.delete(index);
@@ -518,9 +675,12 @@ export default function Home() {
   const sceneStyle = active && phase === "revealing"
     ? { "--rarity-color": rarityColor(active.rarity) } as CSSProperties
     : undefined;
+  const fortune = omikujiById(arcade.meta.omikujiId);
+  const midnight = isMidnight();
+  const foilMul = fortune?.foil ?? 1;
 
   return (
-    <main className={`gacha-stage ${palette} phase-${phase} mode-${mode}${mode === "games" ? ` game-${activeGame}${activeGame === "waifu21" ? " mode-shrine" : ""}${activeGame === "heartlock" ? " mode-duel" : ""}` : ""}${showMenu ? " menu-open" : ""}${packChosen ? " pack-is-chosen" : ""}`} style={sceneStyle}>
+    <main className={`gacha-stage ${palette} phase-${phase} mode-${mode}${mode === "games" ? ` game-${activeGame}${activeGame === "waifu21" ? " mode-shrine" : ""}${activeGame === "heartlock" ? " mode-duel" : ""}` : ""}${showMenu ? " menu-open" : ""}${packChosen ? " pack-is-chosen" : ""}${fortune ? ` omikuji-${fortune.id}` : ""}${midnight ? " is-midnight" : ""}${godPackHit ? " is-god-pack" : ""}`} style={sceneStyle}>
       <div className="scene-vignette" /><div className="constellation constellation-a" /><div className="constellation constellation-b" />
       <div className="orbit orbit-one" /><div className="orbit orbit-two" />
       <div className="dust" aria-hidden="true">{Array.from({ length: 12 }, (_, index) => <i key={index} />)}</div>
@@ -533,7 +693,7 @@ export default function Home() {
               ? <button className="edge-control vault-trigger back-trigger" aria-label="Zurück zum Booster-Karussell" onClick={() => { setPackChosen(false); }}><span className="edge-icon"><AppIcon name="back" /></span><b>BACK</b></button>
               : <button className="edge-control vault-trigger" aria-label="Booster-Auswahl öffnen" aria-expanded={showMenu} onClick={() => setShowMenu(true)} disabled={mode !== "altar" || Boolean(prizeLock)}><span className="edge-icon"><AppIcon name="menu" /></span><b>BOOSTERS</b></button>}
           </div>
-          <div className="wordmark" aria-label={arcadeConfig.brandLabel}>{arcadeConfig.brandLead}<span>{arcadeConfig.brandAccent}</span><small>{arcadeConfig.brandTagline}</small></div>
+          <div className="wordmark" aria-label={arcadeConfig.brandLabel}>{arcadeConfig.brandLead}<span>{arcadeConfig.brandAccent}</span><small>{fortune?.line || arcadeConfig.brandTagline}</small></div>
           <div className="header-actions">
             <button className="edge-control music-control" aria-label={musicEnabled ? "Musik ausschalten" : "Musik einschalten"} aria-pressed={musicEnabled} onClick={() => void toggleMusic()}><span className="edge-icon"><AppIcon name="music" /></span><b>{musicEnabled ? "MUSIC ON" : "MUSIC OFF"}</b></button>
             <button className="edge-control sound-control" aria-label={muted ? "Sound einschalten" : "Sound ausschalten"} aria-pressed={!muted} onClick={() => void toggleMuted()}><span className="edge-icon"><AppIcon name="sound" /></span><b>{muted ? "SOUND OFF" : "SOUND ON"}</b></button>
@@ -575,22 +735,52 @@ export default function Home() {
             />
           )}
 
-          {mode === "altar" && selectedPack && dataReady && phase === "sealed" && !packChosen && <PackCarousel key={selectedPack.setName} art={packMuse.image} setName={selectedPack.setName} cost={selectedPack.cost} cards={selectedPack.odds.cardsPerPack} onTick={() => { void playUiTap(); packHaptic(); }} locked={Boolean(prizeLock)} onSelectSet={() => setShowMenu(true)} onChoose={(count) => { setPackCount(count); setPackChosen(true); void startMusic(); }} />}
+          {mode === "altar" && selectedPack && dataReady && phase === "sealed" && !packChosen && (
+            <>
+              {arcade.canDailyPack() && !prizeLock && (
+                <button type="button" className="daily-pack-banner" onClick={claimDailyPack}>
+                  <small>DAILY ALTAR</small>
+                  <b>Gratis 1¥-Pack bereit</b>
+                  <span>12 Stunden · Rip-Zeremonie bleibt</span>
+                </button>
+              )}
+              {arcade.canOmikuji() && !prizeLock && (
+                <button type="button" className="daily-pack-banner omikuji-banner" onClick={claimOmikuji}>
+                  <small>OMIKUJI</small>
+                  <b>Los ziehen</b>
+                  <span>Nur Stimmung · Pity und Collation bleiben</span>
+                </button>
+              )}
+              {midnight && (
+                <p className="daily-pack-banner midnight-banner" role="status">
+                  <small>MITTERNACHT</small>
+                  <b>Der Altar ist dichter</b>
+                  <span>Odds unverändert · Rain fällt öfter</span>
+                </p>
+              )}
+              <p className={`pack-weigh is-${weigh.feel}`}>{weigh.line}</p>
+              <PackCarousel key={selectedPack.setName} art={packMuse.image} setName={selectedPack.setName} cost={selectedPack.cost} cards={selectedPack.odds.cardsPerPack} onTick={() => { void playUiTap(); packHaptic(); }} locked={Boolean(prizeLock)} onSelectSet={() => setShowMenu(true)} onChoose={(count) => { setPackCount(count); setPackChosen(true); setWeigh(weighPack()); void startMusic(); }} />
+            </>
+          )}
 
           {mode === "altar" && selectedPack && packChosen && (phase === "sealed" || phase === "opening") && (
-            <PackOpening key={`${selectedPack.setName}-${packCount}`} art={packMuse.image} setName={selectedPack.setName} cost={selectedPack.cost} cards={selectedPack.odds.cardsPerPack} count={packCount} opening={phase === "opening"} affordable={canAfford} glows={recipe ? Array.from({ length: packCount }, (_, i) => { const shine = boosterShine(pack.slice(i * selectedPack.odds.cardsPerPack, (i + 1) * selectedPack.odds.cardsPerPack).map(card => card.rarity), recipe); return { level: shine.level, color: shine.rarity ? rarityColor(shine.rarity) : "#cde9f6" }; }) : []} firstCard={pack[0] ? cardImage(pack[0]) : undefined} onOpen={() => void openPack()} onFoil={(progress) => { void playFoil(progress); packHaptic(); }} />
+            <>
+              {phase === "sealed" && <p className={`pack-weigh is-${weigh.feel}`}>{weigh.line}</p>}
+              <PackOpening key={`${selectedPack.setName}-${packCount}`} art={packMuse.image} setName={selectedPack.setName} cost={selectedPack.cost} cards={selectedPack.odds.cardsPerPack} count={packCount} opening={phase === "opening"} affordable={canAfford} glows={recipe ? Array.from({ length: packCount }, (_, i) => { const shine = boosterShine(pack.slice(i * selectedPack.odds.cardsPerPack, (i + 1) * selectedPack.odds.cardsPerPack).map(card => card.rarity), recipe); return { level: shine.level, color: shine.rarity ? rarityColor(shine.rarity) : "#cde9f6" }; }) : []} firstCard={pack[0] ? cardImage(pack[0]) : undefined} onOpen={() => void openPack()} onFoil={(progress) => { void playFoil(progress); packHaptic(); }} />
+            </>
           )}
 
           {mode === "altar" && phase === "revealing" && active && (
-            <div className={`reveal-stage rarity-tier-${rarityTier(active.rarity)} direction-${direction} ${transitioning ? "is-transitioning" : ""} ${activeIndex === freshIndex ? `fresh-hit hit-${hitNonce % 2}` : ""}`}>
+            <div className={`reveal-stage rarity-tier-${rarityTier(active.rarity)} direction-${direction} ${transitioning ? "is-transitioning" : ""} ${activeIndex === freshIndex ? `fresh-hit hit-${hitNonce % 2}` : ""}${godPackHit ? " is-god-pack" : ""}`}>
               {rarityTier(active.rarity) >= 3 && <div className="hit-backdrop" aria-hidden="true"><img src={cardImage(active)} alt="" /></div>}
               <div className="reveal-halo" />
-              {activeIndex === freshIndex && <div key={`${active.id}-${hitNonce}`} className={`reveal-burst burst-tier-${rarityTier(active.rarity)}`} aria-hidden="true"><i /><i /><i /><i /><strong>{active.rarity}</strong><b>{rarityTier(active.rarity) >= 4 ? "GODDESS HIT!" : rarityTier(active.rarity) >= 3 ? "JACKPOT PULL!" : rarityTier(active.rarity) >= 2 ? "SHINY!" : ""}<small>{rarityTier(active.rarity) >= 2 ? active.character : ""}</small></b></div>}
+              {ghostText && <p className="ghost-ticker" role="status">{ghostText}</p>}
+              {activeIndex === freshIndex && <div key={`${active.id}-${hitNonce}`} className={`reveal-burst burst-tier-${rarityTier(active.rarity)}${godPackHit ? " is-god" : ""}`} aria-hidden="true"><i /><i /><i /><i /><strong>{godPackHit ? "GOD PACK" : active.rarity}</strong><b>{godPackHit ? "GOD PACK!" : rarityTier(active.rarity) >= 4 ? "GODDESS HIT!" : rarityTier(active.rarity) >= 3 ? "JACKPOT PULL!" : rarityTier(active.rarity) >= 2 ? "SHINY!" : ""}<small>{rarityTier(active.rarity) >= 2 ? active.character : ""}</small></b></div>}
               <div className="reveal-index"><b>{String(activeIndex + 1).padStart(2, "0")}</b><span>/ {String(pack.length).padStart(2, "0")}</span><i>CARD</i></div>
-              <PackStack boosterSize={selectedPack?.odds.cardsPerPack || pack.length} cards={pack.map(card => ({ id: card.id, image: cardImage(card), character: card.character, rarity: card.rarity, color: rarityColor(card.rarity) }))} activeIndex={activeIndex} onNext={nextCard} onPrevious={previousCard} onInspect={() => { setInspectorFromSummary(false); setInspectorOpen(true); }} onPeek={() => { void playPeek(); }} />
+              <PackStack boosterSize={selectedPack?.odds.cardsPerPack || pack.length} cards={pack.map((card, index) => ({ id: card.id, image: cardImage(card), character: card.character, rarity: card.rarity, color: rarityColor(card.rarity), isNew: pullMarks[index]?.isNew, copies: pullMarks[index]?.copies, chase: pullMarks[index]?.chase }))} activeIndex={activeIndex} onNext={nextCard} onPrevious={previousCard} onInspect={() => { setInspectorFromSummary(false); setInspectorOpen(true); }} onPeek={() => { void playPeek(); }} foilStrength={foilMul} />
               <button className="nav-orb nav-previous" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); previousCard(); } }} onClick={(event) => { if (event.detail === 0) previousCard(); }} disabled={activeIndex === 0} aria-label="Vorherige Karte">←</button>
               <button className="nav-orb nav-next" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); nextCard(); } }} onClick={(event) => { if (event.detail === 0) nextCard(); }} aria-label={activeIndex === pack.length - 1 ? "Pack ansehen" : "Nächste Karte"}>→</button>
-              <div className="pull-caption" aria-live="polite" aria-atomic="true"><b style={{ color: rarityColor(active.rarity) }}>{active.rarity}</b><span><strong>{active.character || "Unknown character"}</strong><small>{active.title}</small></span></div>
+              <div className="pull-caption" aria-live="polite" aria-atomic="true"><b style={{ color: rarityColor(active.rarity) }}>{active.rarity}</b><span><strong>{active.character || "Unknown character"}</strong><small>{active.title}</small>{pullMarks[activeIndex]?.chase ? <em className="pull-flag is-chase">CHASE</em> : pullMarks[activeIndex]?.isNew ? <em className="pull-flag is-new">NEW</em> : (pullMarks[activeIndex]?.copies || 0) > 1 ? <em className="pull-flag">×{pullMarks[activeIndex]?.copies}</em> : null}</span></div>
               {packCount === 10 && <div className="batch-reveal-progress"><span>Pack {Math.floor(activeIndex / (selectedPack?.odds.cardsPerPack || 1)) + 1} / 10</span><button onClick={() => { setInspectorOpen(false); setPhase("summary"); }}>Alle ansehen ↗</button></div>}
               <div className="pull-trail" aria-label="Cards in this pack">{pack.map((card, index) => (packCount === 1 || Math.floor(index / (selectedPack?.odds.cardsPerPack || 1)) === Math.floor(activeIndex / (selectedPack?.odds.cardsPerPack || 1))) && <button key={`${card.id}-${index}`} disabled={index > revealedThrough} aria-label={index <= revealedThrough ? `Card ${index + 1}: ${card.rarity} ${card.character}` : `Card ${index + 1}: unrevealed`} aria-current={index === activeIndex ? "step" : undefined} onClick={() => navigateCard(index)} style={{ "--pull-color": index <= revealedThrough ? rarityColor(card.rarity) : "#604568" } as CSSProperties}><i />{index <= revealedThrough ? card.rarity : "·"}</button>)}</div>
               {activeIndex === freshIndex && rarityTier(active.rarity) >= 3 && <div key={`confetti-${hitNonce}`} className="pull-confetti" aria-hidden="true">{Array.from({ length: 12 }, (_, i) => <i key={i} style={{ "--angle": `${i * 30}deg`, "--flight": `${110 + (i % 3) * 40}px`, "--delay": `${(i % 3) * 35}ms` } as CSSProperties} />)}</div>}
@@ -611,31 +801,42 @@ export default function Home() {
               </div>
               <div className={`summary-grid summary-${pack.length}`}>
                 {pack.map((card, index) => (
-                  <div key={`${card.id}-${index}`} className="summary-slot" style={{ "--card-color": rarityColor(card.rarity), "--delay": `${index * 45}ms` } as CSSProperties}>
+                  <div key={`${card.id}-${index}`} className={`summary-slot${summaryPicked.includes(index) ? " is-picked" : ""}${soldIndexes.has(index) ? " is-sold" : ""}`} style={{ "--card-color": rarityColor(card.rarity), "--delay": `${index * 45}ms` } as CSSProperties}>
                     <button className="summary-art" onClick={() => { setActiveIndex(index); setRevealedThrough(pack.length - 1); setFreshIndex(-1); revealedRef.current = pack.length - 1; setDirection(1); setTransitioning(false); setPhase("revealing"); setInspectorFromSummary(true); setInspectorOpen(true); }} aria-label={`${card.rarity} ${card.character} anzeigen`}>
                       <img src={cardImage(card)} alt={`${card.rarity}-${card.number} ${card.character}`} /><b>{card.rarity}</b>
                     </button>
                     <div className="summary-meta">
                       <span>{formatYuan(valueFen(card.id, card.rarity))} ¥</span>
+                      {pullMarks[index]?.chase ? <em className="pull-flag is-chase">CHASE</em> : pullMarks[index]?.isNew ? <em className="pull-flag is-new">NEW</em> : null}
+                      <button type="button" className={`summary-pick${summaryPicked.includes(index) ? " is-active" : ""}`} disabled={soldIndexes.has(index)} onClick={() => toggleSummaryPick(index)}>{summaryPicked.includes(index) ? "Weg" : "Wahl"}</button>
                       <SellButton className="summary-sell" sold={soldIndexes.has(index)} onSell={() => sellFromPack(index)}>Verkaufen</SellButton>
                     </div>
                   </div>
                 ))}
               </div>
-              <button className="primary-action summary-footer-action" onClick={prizeLock ? returnToGame : resetForAnother}><span>{prizeLock ? `BACK TO ${prizeReturnTitle}` : "OPEN ANOTHER"}</span><i><AppIcon name={prizeLock ? "back" : "replay"} /></i></button>
+              <PackSummaryBulk
+                pack={pack}
+                soldIndexes={soldIndexes}
+                pullMarks={pullMarks}
+                valueFen={valueFen}
+                selected={summaryPicked}
+                onChange={setSummaryPicked}
+                onSellIndexes={sellFromPackMany}
+              />
+              <button className="primary-action summary-footer-action" onClick={prizeLock ? returnToGame : resetForAnother}><span>{isDailyLock ? "FERTIG" : prizeLock ? `BACK TO ${prizeReturnTitle}` : "OPEN ANOTHER"}</span><i><AppIcon name={prizeLock && !isDailyLock ? "back" : "replay"} /></i></button>
             </div>
           )}
         </div>
 
         {mode === "altar" && selectedPack && (packChosen || phase !== "sealed") && (
-          <div className={`set-anchor ${prizeLock ? "is-prize" : ""}`}><span className="anchor-kicker">{prizeLock ? `${prizeReturnTitle} PRIZE · LOCKED` : "SELECTED BOOSTER"}</span><button onClick={() => canChangeSet ? setShowMenu(true) : setShowInfo(true)}><b>{selectedPack.setName}</b><span>{groupLabels[selectedPack.group] || selectedPack.group} · {selectedPack.odds.cardsPerPack} cards</span></button><small>{opened.toLocaleString("de-DE")} packs opened</small></div>
+          <div className={`set-anchor ${prizeLock ? "is-prize" : ""} ${isDailyLock ? "is-daily" : ""}`}><span className="anchor-kicker">{isDailyLock ? "DAILY 1¥ · LOCKED" : prizeLock ? `${prizeReturnTitle} PRIZE · LOCKED` : arcade.meta.oshiCharacter ? `OSHI · ${arcade.meta.oshiCharacter}` : "SELECTED BOOSTER"}</span><button onClick={() => canChangeSet ? setShowMenu(true) : setShowInfo(true)}><b>{selectedPack.setName}</b><span>{groupLabels[selectedPack.group] || selectedPack.group} · {selectedPack.odds.cardsPerPack} cards</span></button><small>{opened.toLocaleString("de-DE")} packs opened{collation && recipe ? ` · Box ${boxMeter(selectedPack, recipe, collation).boxNumber} · ${boxMeter(selectedPack, recipe, collation).remainingPacks} left` : ""}{pityState(arcade.pityBySet[selectedPack.setName] || 0) !== "idle" ? ` · Pity ${pityState(arcade.pityBySet[selectedPack.setName] || 0)}` : ""}</small></div>
         )}
         {mode === "altar" && (phase !== "sealed" || packChosen) && <div className="action-dock">
           {phase === "sealed" && !canAfford && <p className="funds-hint">Nicht genug Yuan · <Link href="/store">Store</Link></p>}
-          {phase === "sealed" && <button className="primary-action" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); void openPack(); } }} onClick={(event) => { if (event.detail === 0) void openPack(); }} disabled={!dataReady || !canAfford}><span>{usingVoucher ? "RIP WITH VOUCHER" : "RIP THIS BOOSTER"}<small>{selectedPack ? `${selectedPack.cost * packCount} ¥` : ""}</small></span><i><AppIcon name="pack" /></i></button>}
+          {phase === "sealed" && <button className="primary-action" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); void openPack(); } }} onClick={(event) => { if (event.detail === 0) void openPack(); }} disabled={!dataReady || !canAfford}><span>{isDailyLock ? "RIP DAILY BOOSTER" : usingVoucher ? "RIP WITH VOUCHER" : "RIP THIS BOOSTER"}<small>{isDailyLock ? "0 ¥" : selectedPack ? `${selectedPack.cost * packCount} ¥` : ""}</small></span><i><AppIcon name="pack" /></i></button>}
           {phase === "opening" && <div className="opening-meter"><i /><span>DEALING YOUR CARDS</span></div>}
           {phase === "revealing" && <button className="primary-action next-action" onPointerDown={(event) => { if (event.button === 0) { event.preventDefault(); nextCard(); } }} onClick={(event) => { if (event.detail === 0) nextCard(); }}><span>{activeIndex === pack.length - 1 ? "SHOW FULL PACK" : "NEXT CARD"}<small>{activeIndex + 1} / {pack.length}</small></span><i><AppIcon name="arrow" /></i></button>}
-          {phase === "summary" && <button className="primary-action" onClick={prizeLock ? returnToGame : resetForAnother}><span>{prizeLock ? `BACK TO ${prizeReturnTitle}` : "OPEN ANOTHER"}</span><i><AppIcon name={prizeLock ? "back" : "replay"} /></i></button>}
+          {phase === "summary" && <button className="primary-action" onClick={prizeLock ? returnToGame : resetForAnother}><span>{isDailyLock ? "FERTIG" : prizeLock ? `BACK TO ${prizeReturnTitle}` : "OPEN ANOTHER"}</span><i><AppIcon name={prizeLock && !isDailyLock ? "back" : "replay"} /></i></button>}
         </div>}
 
         {mode === "altar" && active && phase === "revealing" && inspectorOpen && (
@@ -651,14 +852,14 @@ export default function Home() {
 
         {showMenu && <aside className="pack-drawer pack-picker-sheet is-open" role="dialog" aria-modal="true" aria-label="Booster auswählen">
           <div className="drawer-head"><div><b>Dein nächstes Set</b></div><button onClick={() => setShowMenu(false)} aria-label="Pack Vault schließen">×</button></div>
-          {!canChangeSet && <p className="vault-lock">{prizeLock ? "Minigame prizes stay locked until opened." : "Finish this booster first."}</p>}
+          {!canChangeSet && <p className="vault-lock">{isDailyLock ? "Daily pack stays locked until opened." : prizeLock ? "Minigame prizes stay locked until opened." : "Finish this booster first."}</p>}
           <input className="pack-search" type="search" placeholder="Set suchen…" value={search} onChange={(event) => setSearch(event.target.value)} />
           <div className="group-tabs">{groupOptions.map((group) => <button key={group} className={activeGroup === group ? "active" : ""} onClick={() => setGroupFilter(group)}>{groupLabels[group] || group}</button>)}</div>
           <div className="drawer-list">
             {filteredCatalog.map((item) => {
               const record = sets.find((set) => set.name === item.setName);
               const itemCover = cardAsset(record?.images?.[0]);
-              return <button key={item.id} className={`drawer-pack ${selectedPack?.id === item.id ? "is-active" : ""}`} onClick={() => selectPack(item)} disabled={!canChangeSet}>{itemCover ? <img src={itemCover} alt="" loading="lazy" /> : <span className="cover-fallback">✦</span>}<span><b>{item.setName}</b><small>{item.odds.cardsPerPack} Karten</small></span><em>{item.cost} ¥</em></button>;
+              return <button key={item.id} className={`drawer-pack ${selectedPack?.id === item.id ? "is-active" : ""}`} onClick={() => selectPack(item)} disabled={!canChangeSet || (isDailyLock && item.cost !== 1)}>{itemCover ? <img src={itemCover} alt="" loading="lazy" /> : <span className="cover-fallback">✦</span>}<span><b>{item.setName}</b><small>{item.odds.cardsPerPack} Karten</small></span><em>{item.cost} ¥</em></button>;
             })}
           </div>
         </aside>}
@@ -671,12 +872,61 @@ export default function Home() {
             <button className="modal-close" onClick={() => setShowInfo(false)} aria-label="Schließen">×</button>
             <span className="odds-kicker">PHYSICAL-STYLE COLLATION · {groupLabels[selectedPack.group]}</span><h2 id="odds-title">{selectedPack.setName}</h2><p className="odds-pattern">{recipe.pattern}</p>
             <p className="odds-intro">Jeder Booster wird in festen Positionsgruppen aufgebaut. Die Box-Verteilung läuft unsichtbar im Hintergrund, damit einzelne Packs spannend bleiben und sich trotzdem wie echte Goddess-Story-Produkte verhalten.</p>
+            {collation && (() => {
+              const meter = boxMeter(selectedPack, recipe, collation);
+              const pity = pityState(arcade.pityBySet[selectedPack.setName] || 0);
+              return (
+                <>
+                  <p className="box-meter-copy">
+                    <b>Box {meter.boxNumber}</b> · {meter.packIndex}/{meter.boostersCount} geöffnet · {meter.remainingPacks} übrig · {meter.highRemaining} High-Hits noch in der Box
+                    {pity !== "idle" ? ` · Soft-Pity ${pity}` : ` · Pity ${(arcade.pityBySet[selectedPack.setName] || 0)}/${PITY_ARM}`}
+                  </p>
+                  <p className="box-meter-lanes">
+                    {meter.lanes.map((lane) => `${lane.id}: ${lane.highRemaining} Hits / ${lane.remaining} Slots`).join(" · ")}
+                  </p>
+                  {(() => {
+                    const lane = meter.lanes.find((row) => row.remaining > 0) || meter.lanes[0];
+                    if (!lane) return null;
+                    const locked = arcade.hasDetectiveGuess(selectedPack.setName, meter.boxNumber);
+                    return (
+                      <div className="detective-row">
+                        <b>Collation Detective</b>
+                        <span>Lane {lane.id} · High-Hits noch in der Box?</span>
+                        <div>
+                          {(["0", "1", "2+"] as const).map((guess) => (
+                            <button
+                              key={guess}
+                              type="button"
+                              disabled={locked}
+                              onClick={() => {
+                                if (arcade.hasDetectiveGuess(selectedPack.setName, meter.boxNumber)) return;
+                                arcade.markDetectiveGuess(selectedPack.setName, meter.boxNumber);
+                                if (guess === detectiveBucket(lane.highRemaining)) {
+                                  if (credit(DETECTIVE_PAY_FEN)) {
+                                    setWalletFromFen(economy.balanceFen);
+                                    setWalletAnimating(true);
+                                    window.setTimeout(() => setWalletAnimating(false), 1000);
+                                  }
+                                  setMetaToast("Detective trifft · +0,10 ¥");
+                                } else setMetaToast("Detective daneben. Nächste Box.");
+                              }}
+                            >{guess}</button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </>
+              );
+            })()}
             <p className="ten-pack-odds"><b>10er-Bonus · zweite Chance</b> Jeder Booster im 10er erhält eine 10% Chance auf einen zusätzlichen Roll für seinen letzten variablen Hit-Slot. Die höhere Rarity bleibt; bei gleicher Stufe gewinnt die seltenere Rarity im Set. Kein garantierter Upgrade und keine zusätzlichen Kosten. Die Basiswerte unten gelten für einzelne Booster.</p>
             <div className="odds-grid">{targetRows.map((row) => <div key={row.rarity} style={{ "--chip": rarityColor(row.rarity) } as CSSProperties}><b>{row.rarity}</b><span>Ø {(row.perBox / selectedPack.boostersCount).toLocaleString("de-DE", { maximumFractionDigits: 3 })} pro Booster</span></div>)}</div>
             <div className="collation-notes"><p><b>Keine normalen Doppelbilder:</b> Innerhalb eines Boosters wird jede exakte Karten-ID ohne Zurücklegen gezogen.</p><p><b>Pull order bleibt echt:</b> Base-, Shine- und Hit-Slots werden nicht nach Rarity nachsortiert.</p>{selectedPack.odds.bonus.length > 0 && <p><b>Bonus-Packs:</b> PR/Bonus-Karten bleiben Box-Beigaben und werden nicht künstlich in normale Booster gemischt.</p>}</div>
           </section>
         </div>
       )}
+      {rainBurst > 0 && <div key={rainBurst} className={`yuan-rain${midnight ? " is-midnight" : ""}`} aria-hidden="true">{Array.from({ length: midnight ? 22 : 14 }, (_, index) => <i key={index} />)}</div>}
+      {metaToast && <p className="meta-toast" role="status">{metaToast}</p>}
       {pendingTopup && (
         <div className="modal-backdrop" role="presentation">
           <section className="odds-modal topup-modal" role="dialog" aria-modal="true" aria-labelledby="topup-title">

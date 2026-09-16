@@ -7,17 +7,22 @@ import {
   applyTopup,
   cardValueFen,
   canOpenPack,
+  canOpenPacks,
   canRemoveCards,
   canSpendFen,
+  craftCard,
   createEconomyState,
   creditFen,
   excessCopies,
+  finalizeFreePack,
   finalizeOpenedPack,
+  grantVoucher,
   parseCardValuesCsv,
   parseEconomyState,
   parseRarityValues,
   removeCards,
   sellCard,
+  sellCards,
   spendFen,
   storeSuccessChance,
   tradeExcess,
@@ -166,6 +171,32 @@ test("card wagers remove exact copies and reject missing inventory", () => {
   assert.equal(canRemoveCards(owned, [10, 10, 10]), false);
   assert.equal(removeCards(owned, [99]).ok, false);
   assert.equal(removeCards(owned, []).ok, false);
+});
+
+test("free packs and craft consume only excess copies", () => {
+  assert.equal(canOpenPacks(createEconomyState(), 0, 1), true);
+  assert.equal(canOpenPacks(createEconomyState(), 0, 10), false);
+  const free = finalizeFreePack(createEconomyState(), [7, 8]);
+  assert.equal(free.ok, true);
+  assert.equal(free.state.balanceFen, STARTING_BALANCE_FEN);
+  assert.equal(free.state.cards["7"], 1);
+  assert.equal(free.state.stats.packsOpened, 1);
+  const vouchered = grantVoucher(createEconomyState(), 1);
+  assert.equal(vouchered.vouchers[1], 1);
+  const junk = sellCards({ ...createEconomyState(), cards: { "3": 2 } }, [{ cardId: 3, valueFen: 5 }, { cardId: 3, valueFen: 5 }]);
+  assert.equal(junk.ok, true);
+  assert.equal(junk.sold, 2);
+  const lookup = (id) => ({
+    1: { rarity: "R", set_name: "NS-03" },
+    2: { rarity: "R", set_name: "NS-03" },
+    9: { rarity: "SR", set_name: "NS-03" },
+  }[id]);
+  const ripe = { ...createEconomyState(), cards: { "1": 10, "2": 5 } };
+  const crafted = craftCard(ripe, { id: 9, rarity: "SR", set_name: "NS-03" }, lookup);
+  assert.equal(crafted.ok, true);
+  assert.equal(crafted.state.cards["9"], 1);
+  assert.equal(crafted.spent.length, 12);
+  assert.ok((crafted.state.cards["1"] || 0) >= 1);
 });
 
 test("invalid stored economy is rejected", () => {

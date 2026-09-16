@@ -7,20 +7,25 @@ import {
   addCardsToCollection,
   applyTopup,
   cardValueFen,
+  craftCard,
   creditFen,
   economyFromSnapshot,
   emptyPriceTable,
+  finalizeFreePack,
   finalizeOpenedPack,
   finalizeOpenedPacks,
+  grantVoucher,
   parseCardValuesCsv,
   parseRarityValues,
   readEconomySnapshot,
   removeCards,
   sellCard,
+  sellCards,
   spendFen,
   subscribeEconomy,
   tradeExcess,
   writeStoredEconomy,
+  type CraftLookup,
   type PriceTable,
   type RarityLookup,
 } from "./economy";
@@ -76,6 +81,26 @@ export function useEconomy() {
     return true;
   }, []);
 
+  const sellMany = useCallback((items: { cardId: number; valueFen: number }[]) => {
+    const result = sellCards(economyFromSnapshot(readEconomySnapshot()), items);
+    if (!result.ok) return 0;
+    writeStoredEconomy(result.state);
+    return result.sold;
+  }, []);
+
+  const openFreePack = useCallback((cardIds: number[]) => {
+    const result = finalizeFreePack(economyFromSnapshot(readEconomySnapshot()), cardIds);
+    if (result.ok) writeStoredEconomy(result.state);
+    return result;
+  }, []);
+
+  const craft = useCallback((target: { id: number; rarity: string; set_name: string }, lookup: CraftLookup) => {
+    const result = craftCard(economyFromSnapshot(readEconomySnapshot()), target, lookup);
+    if (!result.ok) return result;
+    writeStoredEconomy(result.state);
+    return result;
+  }, []);
+
   const trade = useCallback((rarity: "R" | "SR", rarityOf: RarityLookup) => {
     const result = tradeExcess(economyFromSnapshot(readEconomySnapshot()), rarityOf, rarity);
     if (!result.ok) return false;
@@ -85,6 +110,10 @@ export function useEconomy() {
 
   const creditTopup = useCallback((yuan: number) => {
     writeStoredEconomy(applyTopup(economyFromSnapshot(readEconomySnapshot()), yuan));
+  }, []);
+
+  const addVoucher = useCallback((cost: 1 | 2) => {
+    writeStoredEconomy(grantVoucher(economyFromSnapshot(readEconomySnapshot()), cost));
   }, []);
 
   const spend = useCallback((fen: number) => {
@@ -120,8 +149,12 @@ export function useEconomy() {
     openPack,
     openPacks,
     sell,
+    sellMany,
+    openFreePack,
+    craft,
     trade,
     creditTopup,
+    addVoucher,
     spend,
     credit,
     takeCards,

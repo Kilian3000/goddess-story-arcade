@@ -20,7 +20,7 @@ test("pack choice is cosmetic and opening remains the only draw", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url),"utf8");
   assert.doesNotMatch(carousel,/drawPack|secureRandom|localStorage|rarity/);
   assert.match(page,/!packChosen \|\| phase !== "sealed"/);
-  assert.equal((page.match(/setPackChosen\(false\)/g)||[]).length,5);
+  assert.equal((page.match(/setPackChosen\(false\)/g)||[]).length,6);
   assert.match(carousel,/cancelAnimationFrame\(frame.current\)/);
   assert.match(carousel,/if \(chosen.current \|\| drag.current\) return/);
 });

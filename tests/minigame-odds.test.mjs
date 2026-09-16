@@ -31,14 +31,27 @@ import {
   rankUpgradeTargets,
   rouletteColor,
   rouletteMultiplier,
+  closestValueCard,
+  duelAtk,
+  hiloCall,
+  hiloPayout,
+  packBattleRanks,
+  caboScore,
+  koiYaku,
+  loveMustCountess,
+  patiencePair,
+  scopaCaptures,
+  speedPayout,
   upgraderChance,
   upgraderTargetFen,
 } from "../app/minigames/odds.ts";
+import { ufoPush } from "../app/arcade-flavor.ts";
 import { normalizeMinigameId } from "../app/economy.ts";
 
 test("legacy prize locks map onto hub minigame ids", () => {
   assert.equal(normalizeMinigameId("shrine"), "waifu21");
-  assert.equal(normalizeMinigameId("duel"), "heartlock");
+  assert.equal(normalizeMinigameId("duel"), "duel");
+  assert.equal(normalizeMinigameId("heartlock"), "heartlock");
   assert.equal(normalizeMinigameId("crash"), "crash");
   assert.equal(normalizeMinigameId("nope"), null);
 });
@@ -175,4 +188,35 @@ test("upgrade row ranks the closest chance first", () => {
   assert.equal(ranked[0].id, 1);
   assert.equal(upgraderTargetFen(100, 0.475), 200);
   assert.equal(ranked.length, 3);
+});
+
+test("hi-lo, duel and pack battle helpers stay deterministic", () => {
+  assert.equal(hiloCall(10, 12), "higher");
+  assert.equal(hiloCall(12, 10), "lower");
+  assert.equal(hiloCall(10, 10), "push");
+  assert.equal(hiloPayout(100, 1), 192);
+  assert.equal(duelAtk(3, 250), 60 + 25);
+  assert.equal(closestValueCard([{ id: 1, valueFen: 40 }, { id: 2, valueFen: 90 }], 100)?.id, 2);
+  const battle = packBattleRanks([
+    { id: "you", values: [80, 10] },
+    { id: "bot", values: [50, 40] },
+  ]);
+  assert.equal(battle.winnerId, "you");
+  assert.equal(packBattleRanks([
+    { id: "a", values: [50, 20] },
+    { id: "b", values: [50, 20] },
+  ]).tied, true);
+});
+
+test("new table helpers stay deterministic", () => {
+  assert.equal(speedPayout(100, 2), 192);
+  assert.equal(caboScore([10, 20, 5]), 35);
+  assert.deepEqual(scopaCaptures(7, [3, 4, 9]), [3, 4]);
+  assert.deepEqual(scopaCaptures(9, [9, 2]), [9]);
+  assert.equal(loveMustCountess([7, 5]), true);
+  assert.equal(loveMustCountess([7, 1]), false);
+  assert.equal(koiYaku([{ character: "A" }, { character: "A" }, { character: "A" }]), 3);
+  assert.equal(patiencePair({ character: "A", rarity: "R" }, { character: "A", rarity: "SR" }), true);
+  assert.equal(ufoPush("center", () => 0), 12);
+  assert.equal(ufoPush("left", () => 0), 8);
 });

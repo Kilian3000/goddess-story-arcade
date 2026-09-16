@@ -34,6 +34,7 @@ type LuckyShrineProps = {
   ready: boolean;
   muses: WaifuMuse[];
   onClaim: (pack: PackConfig) => void;
+  claimLabel?: string;
   playDrop: (lane?: number) => Promise<void>;
   playBounce: (index: number) => Promise<void>;
   playWin: (cost: number) => Promise<void>;
@@ -149,7 +150,7 @@ function BlackjackCardView({ card, hidden = false, delayIndex = 0 }: {
   );
 }
 
-export function Waifu21({ catalog, ready, muses, onClaim, playDrop, playBounce, playWin }: LuckyShrineProps) {
+export function Waifu21({ catalog, ready, muses, onClaim, claimLabel, playDrop, playBounce, playWin }: LuckyShrineProps) {
   const [status, setStatus] = useState<GameStatus>("ready");
   const [deck, setDeck] = useState<BlackjackCard[]>([]);
   const [playerHand, setPlayerHand] = useState<BlackjackCard[]>([]);
@@ -321,7 +322,7 @@ export function Waifu21({ catalog, ready, muses, onClaim, playDrop, playBounce, 
             </>}
             {status === "dealer" && <div className="waifu21-thinking"><i /><span>DEALER DRAWING…</span></div>}
             {status === "win" && <div className="waifu21-winning"><i>✦</i><span>HAND WON</span></div>}
-            {status === "prize" && prize && <button className="waifu21-action waifu21-claim" onClick={() => { window.localStorage.removeItem(PRIZE_KEY); onClaim(prize); }}><span>OPEN {prize.setName}</span><i>↗</i></button>}
+            {status === "prize" && prize && <button className="waifu21-action waifu21-claim" onClick={() => { window.localStorage.removeItem(PRIZE_KEY); onClaim(prize); }}><span>{claimLabel || `OPEN ${prize.setName}`}</span><i>↗</i></button>}
           </div>
         </div>
       </div>

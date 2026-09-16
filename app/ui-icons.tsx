@@ -20,7 +20,23 @@ export type AppIconName =
   | "coin"
   | "upgrade"
   | "arrow"
-  | "replay";
+  | "replay"
+  | "memory"
+  | "duel"
+  | "hilo"
+  | "war"
+  | "battle"
+  | "sister"
+  | "lastpack"
+  | "gacha"
+  | "ufo"
+  | "mind"
+  | "speed"
+  | "monte"
+  | "cabo"
+  | "scopa"
+  | "letter"
+  | "koi";
 
 type Props = SVGProps<SVGSVGElement> & { name: AppIconName };
 
@@ -46,6 +62,22 @@ export function AppIcon({ name, className = "app-icon", ...props }: Props) {
   if (name === "coin") return <svg {...common}><circle cx="12" cy="12" r="9" /><path d="M9 8h4a3 3 0 0 1 0 6H9M12 6v12" /></svg>;
   if (name === "upgrade") return <svg {...common}><circle cx="12" cy="12" r="9" /><path d="m8 13 4-4 4 4M12 9v7" /></svg>;
   if (name === "replay") return <svg {...common}><path d="M4 11a8 8 0 1 1 2 6M4 11V5M4 11h6" /></svg>;
+  if (name === "memory") return <svg {...common}><rect x="3" y="4" width="7" height="7" rx="1" /><rect x="14" y="4" width="7" height="7" rx="1" /><rect x="3" y="13" width="7" height="7" rx="1" /><rect x="14" y="13" width="7" height="7" rx="1" /></svg>;
+  if (name === "duel") return <svg {...common}><path d="m7 4 5 8-5 8M17 4l-5 8 5 8" /><path d="M4 12h16" /></svg>;
+  if (name === "hilo") return <svg {...common}><path d="M7 16V8m0 0 3 3M7 8 4 11M17 8v8m0 0 3-3m-3 3-3-3" /></svg>;
+  if (name === "war") return <svg {...common}><rect x="4" y="6" width="8" height="12" rx="1" /><rect x="12" y="6" width="8" height="12" rx="1" /></svg>;
+  if (name === "battle") return <svg {...common}><path d="M8 4h8l2 4H6l2-4Z" /><path d="M6 8v12h12V8M10 12h4" /></svg>;
+  if (name === "sister") return <svg {...common}><path d="M8 8a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z" /><path d="M5 20c1-4 4-6 7-6s6 2 7 6" /></svg>;
+  if (name === "lastpack") return <svg {...common}><path d="M5 4h6v16H5zM13 4h6v16h-6z" /><path d="M16 10v4" /></svg>;
+  if (name === "gacha") return <svg {...common}><circle cx="12" cy="13" r="6" /><path d="M9 7h6l1 3H8l1-3Z" /></svg>;
+  if (name === "ufo") return <svg {...common}><path d="M4 14c2-4 14-4 16 0-2 3-14 3-16 0Z" /><path d="M9 10c.5-3 5.5-3 6 0" /></svg>;
+  if (name === "mind") return <svg {...common}><path d="M8 15c-2-2-2-6 0-8m8 8c2-2 2-6 0-8" /><circle cx="12" cy="12" r="2" /></svg>;
+  if (name === "speed") return <svg {...common}><path d="M4 16h7l2-8 2 8h5" /></svg>;
+  if (name === "monte") return <svg {...common}><rect x="3" y="7" width="6" height="10" rx="1" /><rect x="9" y="5" width="6" height="10" rx="1" /><rect x="15" y="7" width="6" height="10" rx="1" /></svg>;
+  if (name === "cabo") return <svg {...common}><path d="M6 8h12M8 8v10h8V8" /><path d="M10 12h4" /></svg>;
+  if (name === "scopa") return <svg {...common}><circle cx="8" cy="10" r="3" /><circle cx="16" cy="10" r="3" /><circle cx="12" cy="16" r="3" /></svg>;
+  if (name === "letter") return <svg {...common}><rect x="4" y="6" width="16" height="12" rx="1" /><path d="m4 8 8 6 8-6" /></svg>;
+  if (name === "koi") return <svg {...common}><path d="M5 12c3-6 11-6 14 0-3 6-11 6-14 0Z" /><circle cx="16" cy="11" r="1" /></svg>;
   return <svg {...common}><path d="M5 12h14m-5-5 5 5-5 5" /></svg>;
 }
 
@@ -58,4 +90,20 @@ export const MINIGAME_ICONS = {
   jackpot: "jackpot",
   coinflip: "coin",
   upgrader: "upgrade",
+  memory: "memory",
+  duel: "duel",
+  hilo: "hilo",
+  war: "war",
+  packbattle: "battle",
+  sisterrip: "sister",
+  lastpack: "lastpack",
+  gachapon: "gacha",
+  ufo: "ufo",
+  mind: "mind",
+  speed: "speed",
+  monte: "monte",
+  cabo: "cabo",
+  scopa: "scopa",
+  loveletter: "letter",
+  koikoi: "koi",
 } as const satisfies Record<string, AppIconName>;
